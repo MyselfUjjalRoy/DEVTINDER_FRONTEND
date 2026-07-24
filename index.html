@@ -1,10 +1,23 @@
 <!doctype html>
-<html lang="en" data-theme="sunset">
+<html lang="en" data-theme="devtinder-dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dev-finder</title>
+    <title>DevTinder – Find Your Dev Match</title>
+    <meta name="description" content="DevTinder — the developer matchmaking platform. Swipe through profiles, connect with talented builders, and pair program on your next big project." />
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <!-- Persist theme from localStorage before React mounts (avoids flash) -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("devtinder-theme");
+          if (saved === "devtinder-light" || saved === "devtinder-dark") {
+            document.documentElement.setAttribute("data-theme", saved);
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

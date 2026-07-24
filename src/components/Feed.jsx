@@ -1,7 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import { BASE_URL } from "../utils/constants";
-import { addFeed } from "../utils/feedSlice";
-import { useEffect, useState } from "react";
+import { addFeed, removeUserFromFeed } from "../utils/feedSlice";
+import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import UserCard from "./UserCard";
 import { Link } from "react-router-dom";
@@ -10,6 +10,7 @@ const Feed = () => {
   const dispatch = useDispatch();
   const feed = useSelector((store) => store.feed);
   const [loading, setLoading] = useState(true);
+  const [animClass, setAnimClass] = useState("");
 
   const getFeed = async () => {
     setLoading(true);
@@ -27,32 +28,62 @@ const Feed = () => {
     getFeed();
   }, []);
 
+  const triggerSwipe = useCallback(
+    async (status) => {
+      if (!feed || feed.length === 0) return;
+      const currentUser = feed[0];
+      setAnimClass(status === "ignored" ? "animate-swipe-left" : "animate-swipe-right");
+
+      setTimeout(async () => {
+        try {
+          await axios.post(
+            `${BASE_URL}request/send/${status}/${currentUser._id}`,
+            {},
+            { withCredentials: true }
+          );
+          dispatch(removeUserFromFeed(currentUser._id));
+        } catch (err) {
+          console.error("Keyboard request error:", err);
+        } finally {
+          setAnimClass("");
+        }
+      }, 250);
+    },
+    [feed, dispatch]
+  );
+
+  // Keyboard shortcut listener: Left Arrow = Pass, Right Arrow = Connect
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "ArrowLeft") {
+        triggerSwipe("ignored");
+      } else if (e.key === "ArrowRight") {
+        triggerSwipe("interested");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [triggerSwipe]);
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[70vh] p-4">
-        {/* Skeleton Matching UserCard */}
-        <div className="card bg-base-200 border border-base-300 w-96 h-[32rem] shadow-xl rounded-3xl overflow-hidden animate-pulse">
-          <div className="bg-base-300 h-80 w-full"></div>
-          <div className="card-body p-6 space-y-4">
-            <div className="flex justify-between items-center">
-              <div className="h-6 bg-base-300 rounded-md w-1/2"></div>
-              <div className="h-5 bg-base-300 rounded-md w-1/5"></div>
-            </div>
-            <div className="h-3 bg-base-300 rounded-md w-1/3"></div>
-            <div className="space-y-2 mt-4">
-              <div className="h-3.5 bg-base-300 rounded-md w-full"></div>
-              <div className="h-3.5 bg-base-300 rounded-md w-5/6"></div>
-              <div className="h-3.5 bg-base-300 rounded-md w-4/6"></div>
-            </div>
-            <div className="flex gap-1.5 mt-4">
-              <div className="h-5 bg-base-300 rounded-md w-12"></div>
-              <div className="h-5 bg-base-300 rounded-md w-16"></div>
-              <div className="h-5 bg-base-300 rounded-md w-14"></div>
-            </div>
-            <div className="flex gap-4 mt-8">
-              <div className="h-12 bg-base-300 rounded-2xl flex-1"></div>
-              <div className="h-12 bg-base-300 rounded-2xl flex-1"></div>
-            </div>
+      <div className="flex flex-col justify-center items-center min-h-[75vh] p-4">
+        {/* Skeleton Matching Deck */}
+        <div className="glass-card w-[22.5rem] sm:w-[26rem] h-[36rem] rounded-3xl overflow-hidden animate-pulse border border-white/10 p-6 space-y-6">
+          <div className="bg-base-800/80 h-72 w-full rounded-2xl"></div>
+          <div className="space-y-3">
+            <div className="h-7 bg-base-800/80 rounded-lg w-2/3"></div>
+            <div className="h-4 bg-base-800/80 rounded-lg w-full"></div>
+            <div className="h-4 bg-base-800/80 rounded-lg w-4/5"></div>
+          </div>
+          <div className="flex gap-2">
+            <div className="h-6 bg-base-800/80 rounded-md w-16"></div>
+            <div className="h-6 bg-base-800/80 rounded-md w-20"></div>
+            <div className="h-6 bg-base-800/80 rounded-md w-16"></div>
+          </div>
+          <div className="flex gap-4 pt-4">
+            <div className="h-12 bg-base-800/80 rounded-2xl flex-1"></div>
+            <div className="h-12 bg-base-800/80 rounded-2xl flex-1"></div>
           </div>
         </div>
       </div>
@@ -61,25 +92,36 @@ const Feed = () => {
 
   if (!feed || feed.length <= 0) {
     return (
-      <div className="flex justify-center items-center min-h-[70vh] p-4">
-        <div className="card bg-base-200 border border-base-300 max-w-md text-center p-8 rounded-3xl shadow-xl space-y-5">
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary">
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+      <div className="flex justify-center items-center min-h-[75vh] p-4">
+        <div className="glass-card max-w-lg text-center p-8 sm:p-10 rounded-3xl border border-white/10 shadow-2xl space-y-6 relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 w-36 h-36 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="mx-auto w-20 h-20 bg-gradient-to-tr from-primary to-secondary rounded-3xl p-0.5 shadow-xl shadow-primary/25 flex items-center justify-center">
+            <div className="w-full h-full bg-base-950 rounded-[1.4rem] flex items-center justify-center">
+              <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+            </div>
           </div>
+
           <div className="space-y-2">
-            <h1 className="text-2xl font-black text-white">All Caught Up!</h1>
-            <p className="text-sm text-base-content/65 leading-relaxed">
-              No new developer profiles found in your area. Try editing your skills, or check your pending connection requests!
+            <h1 className="text-3xl font-black text-white">Deck Cleared! 🎉</h1>
+            <p className="text-sm text-base-content/70 leading-relaxed max-w-md mx-auto">
+              You've swiped through all available developers in your area. Update your tech stack skills or check your pending matches!
             </p>
           </div>
+
           <div className="flex flex-col sm:flex-row gap-3 pt-2 justify-center">
-            <Link to="/requests" className="btn btn-outline btn-sm rounded-xl h-10 px-4">
-              View Requests
+            <Link 
+              to="/profile" 
+              className="btn btn-outline border-white/10 text-white hover:bg-white/10 rounded-2xl h-12 px-6 font-bold text-xs"
+            >
+              Update Skills & Profile
             </Link>
-            <Link to="/connections" className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white btn-sm rounded-xl h-10 px-4">
-              My Connections
+            <Link 
+              to="/connections" 
+              className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white rounded-2xl h-12 px-6 font-bold text-xs shadow-lg shadow-primary/25"
+            >
+              View My Matches
             </Link>
           </div>
         </div>
@@ -87,9 +129,42 @@ const Feed = () => {
     );
   }
 
+  const currentDev = feed[0];
+  const nextDev = feed[1];
+
   return (
-    <div className="flex justify-center items-center min-h-[75vh] p-4">
-      <UserCard user={feed[0]} />
+    <div className="flex flex-col items-center justify-center min-h-[78vh] p-4 py-8">
+      {/* Keyboard Shortcut Indicator */}
+      <div className="hidden sm:flex items-center gap-4 mb-3 text-xs text-base-content/40 font-bold tracking-wider uppercase">
+        <span className="flex items-center gap-1">
+          <kbd className="kbd kbd-xs bg-base-800 border-white/10 text-white">←</kbd> Press Left to Pass
+        </span>
+        <span>•</span>
+        <span className="flex items-center gap-1">
+          <kbd className="kbd kbd-xs bg-base-800 border-white/10 text-white">→</kbd> Press Right to Connect
+        </span>
+      </div>
+
+      {/* Stacked Cards Layout */}
+      <div className="relative w-[22.5rem] sm:w-[26rem] flex justify-center items-center">
+        {/* Next Card Preview behind */}
+        {nextDev && (
+          <div className="absolute top-4 scale-[0.94] opacity-40 blur-[1px] pointer-events-none transition-all duration-300">
+            <UserCard user={nextDev} />
+          </div>
+        )}
+
+        {/* Current Active Card */}
+        <div className={`w-full z-10 ${animClass}`}>
+          <UserCard 
+            user={currentDev} 
+            onActionAnim={(status) => {
+              setAnimClass(status === "ignored" ? "animate-swipe-left" : "animate-swipe-right");
+              setTimeout(() => setAnimClass(""), 300);
+            }} 
+          />
+        </div>
+      </div>
     </div>
   );
 };

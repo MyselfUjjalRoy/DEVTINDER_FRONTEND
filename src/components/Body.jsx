@@ -50,13 +50,13 @@ const Body = () =>{
     }, [userData?._id]);
 
     return (
-        <div>
-            <NavBar/>
-            
-            {/*Outlet - any children components of Body will be rendered here*/}
-            <Outlet />
-
-            <Footer/>
+        <div className="flex flex-col min-h-screen">
+            <NavBar />
+            <div className="flex-1">
+                {/*Outlet - any children components of Body will be rendered here*/}
+                <Outlet />
+            </div>
+            <Footer />
         </div>
     );
 };
