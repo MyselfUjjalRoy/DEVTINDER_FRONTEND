@@ -4,6 +4,7 @@ import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { addConnections } from "../utils/connectionSlice";
 import { Link } from "react-router-dom";
+import { MembershipBadge, getAvatarRingStyle, getCardGlowStyle } from "../utils/membershipUtils";
 
 const Connections = () => {
   const dispatch = useDispatch();
@@ -59,39 +60,55 @@ const Connections = () => {
     );
   }
 
-  const filteredConnections = connections.filter((conn) => {
-    const fullName = `${conn.firstName} ${conn.lastName}`.toLowerCase();
-    const skillsString = Array.isArray(conn.skills) ? conn.skills.join(" ").toLowerCase() : "";
-    const search = searchTerm.toLowerCase();
-    return fullName.includes(search) || skillsString.includes(search);
+  const filteredConnections = connections.filter((connection) => {
+    const fullName = `${connection.firstName} ${connection.lastName}`.toLowerCase();
+    const skillsStr = Array.isArray(connection.skills)
+      ? connection.skills.join(" ").toLowerCase()
+      : (connection.skills || "").toLowerCase();
+    const query = searchTerm.toLowerCase();
+    return fullName.includes(query) || skillsStr.includes(query);
   });
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10 fade-in">
-      
-      {/* Header */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+    <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12 fade-in">
+      {/* Top Banner & Search Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">My Developer Matches</h1>
-          <p className="text-xs text-base-content/60 mt-1">
-            You have <span className="text-primary font-bold">{connections.length}</span> active connections ready to pair program.
+          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight flex items-center gap-3">
+            <span>Dev Matches</span>
+            <span className="badge badge-primary font-black text-xs px-3 py-2">
+              {connections.length}
+            </span>
+          </h1>
+          <p className="text-xs sm:text-sm text-base-content/60 mt-1">
+            Connect and chat in real-time with developers who matched back with you.
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="w-full md:w-72">
-          <label className="input input-bordered bg-base-900/60 border-white/10 focus-within:border-primary flex items-center gap-2 rounded-2xl h-11 text-xs">
-            <svg className="w-4 h-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        {/* Search Input */}
+        <div className="w-full sm:w-72">
+          <div className="relative">
+            <svg
+              className="w-4 h-4 text-base-content/40 absolute left-3.5 top-1/2 -translate-y-1/2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
             <input
               type="text"
-              placeholder="Search by name or skill..."
-              className="grow text-white placeholder-base-content/40 focus:outline-none"
+              placeholder="Filter by name or tech stack..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="input input-sm w-full pl-10 pr-4 py-4 rounded-2xl bg-base-900/60 border border-white/10 text-xs focus:border-primary focus:outline-none transition-all text-white placeholder:text-base-content/40"
             />
-          </label>
+          </div>
         </div>
       </div>
 
@@ -103,17 +120,17 @@ const Connections = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {filteredConnections.map((connection) => {
-            const { _id, firstName, lastName, photoURL, age, gender, about, skills } = connection;
+            const { _id, firstName, lastName, photoURL, age, gender, about, skills, membershipType, isPremium } = connection;
             const skillList = Array.isArray(skills) ? skills : [];
 
             return (
               <div
                 key={_id}
-                className="glass-card border border-white/10 p-5 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 transition-all duration-300 hover:border-primary/30 shadow-xl fade-in"
+                className={`glass-card border p-5 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 transition-all duration-300 shadow-xl fade-in ${getCardGlowStyle(connection)}`}
               >
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="avatar shrink-0">
-                    <div className="w-16 h-16 rounded-2xl ring-2 ring-primary/30 overflow-hidden bg-base-900">
+                    <div className={`w-16 h-16 rounded-2xl overflow-hidden bg-base-900 ${getAvatarRingStyle(connection)}`}>
                       <img
                         src={photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"}
                         alt={firstName}
@@ -123,10 +140,11 @@ const Connections = () => {
                   </div>
                   
                   <div className="text-left space-y-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="font-black text-lg text-white truncate">
                         {firstName} {lastName}
                       </h2>
+                      <MembershipBadge membershipType={membershipType} isPremium={isPremium} size="sm" />
                       {age && (
                         <span className="badge badge-xs bg-base-800 text-base-content/60 border-white/5 font-semibold">
                           {age}y

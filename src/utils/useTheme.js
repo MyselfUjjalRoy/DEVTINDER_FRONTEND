@@ -1,30 +1,15 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 
-const DARK  = "devtinder-dark";
-const LIGHT = "devtinder-light";
+const DARK = "devtinder-dark";
 
-/**
- * useTheme – reads/writes the DaisyUI data-theme on <html>
- * and persists choice in localStorage so it survives refresh.
- */
 export function useTheme() {
-  const [theme, setTheme] = useState(() => {
-    try {
-      return localStorage.getItem("devtinder-theme") || DARK;
-    } catch {
-      return DARK;
-    }
-  });
-
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme", DARK);
     try {
-      localStorage.setItem("devtinder-theme", theme);
+      localStorage.setItem("devtinder-theme", DARK);
     } catch {}
-  }, [theme]);
+  }, []);
 
-  const toggleTheme = () => setTheme((t) => (t === DARK ? LIGHT : DARK));
-  const isDark = theme === DARK;
-
-  return { theme, isDark, toggleTheme };
+  return { theme: DARK, isDark: true, toggleTheme: () => {} };
 }
+

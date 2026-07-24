@@ -5,6 +5,7 @@ import { useDispatch } from "react-redux";
 import { addUser } from "../utils/userSlice";
 import { BASE_URL } from "../utils/constants";
 import UserCard from "./UserCard";
+import { MembershipBadge } from "../utils/membershipUtils";
 
 const EditProfile = ({ user }) => {
   const [firstName, setFirstName] = useState(user?.firstName || "");
@@ -226,22 +227,26 @@ const EditProfile = ({ user }) => {
 
             {user?.isPremium ? (
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-amber-500/10 border border-amber-500/30 rounded-2xl">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-amber-400 text-slate-950 rounded-xl flex items-center justify-center font-black">
-                      ★
+                    <div className="w-12 h-12 bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-amber-500/20">
+                      👑
                     </div>
                     <div className="text-left">
-                      <h4 className="font-bold text-white text-sm">{user.membershipType || "Gold"} Pass Active</h4>
-                      <p className="text-[10px] text-amber-400 uppercase font-bold tracking-wider mt-0.5">Gold Verification Badge Active</p>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-extrabold text-white text-sm">{(user.membershipType || "Gold").toUpperCase()} Pass Active</h4>
+                        <MembershipBadge membershipType={user.membershipType} isPremium={user.isPremium} size="sm" />
+                      </div>
+                      <p className="text-[10px] text-amber-400/90 font-bold tracking-wider mt-1">
+                        Verified Member Badge & Direct Socket Messaging Enabled
+                      </p>
                     </div>
                   </div>
-                  <span className="badge badge-warning text-xs font-black py-2 px-3">PRO</span>
                 </div>
 
                 <button
                   onClick={handleCancelMembership}
-                  className="btn btn-outline border-error/40 text-error hover:bg-error/15 w-full rounded-2xl font-bold h-11 transition-all"
+                  className="btn btn-outline border-error/40 text-error hover:bg-error/15 w-full rounded-2xl font-bold text-xs h-11 transition-all"
                 >
                   Cancel Subscription
                 </button>

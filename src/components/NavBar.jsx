@@ -4,6 +4,7 @@ import { BASE_URL } from "../utils/constants";
 import axios from "axios";
 import { removeUser } from "../utils/userSlice";
 import { useTheme } from "../utils/useTheme";
+import { MembershipBadge, getAvatarRingStyle } from "../utils/membershipUtils";
 
 const NavBar = () => {
   const user = useSelector((store) => store.user);
@@ -26,39 +27,39 @@ const NavBar = () => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="sticky top-0 z-50 w-full glass-nav transition-all duration-300">
+    <div className="sticky top-0 z-50 w-full glass-nav-aesthetic transition-all duration-300">
       <div className="navbar max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 justify-between">
         {/* Brand Logo */}
         <div className="flex-none">
           <Link 
             to={user ? "/feed" : "/"} 
-            className="flex items-center gap-2.5 group"
+            className="flex items-center gap-3 group"
           >
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-primary via-secondary to-accent p-0.5 shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform duration-300">
-              <div className="w-full h-full bg-base-200 rounded-[0.9rem] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 via-pink-500 to-purple-600 p-0.5 shadow-lg shadow-rose-500/25 group-hover:scale-105 group-hover:shadow-rose-500/40 transition-all duration-300">
+              <div className="w-full h-full bg-[#0b0c14] rounded-[0.85rem] flex items-center justify-center">
                 <svg 
-                  className="w-5 h-5 text-primary group-hover:rotate-12 transition-transform duration-300 fill-current" 
+                  className="w-5 h-5 text-rose-500 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 fill-current drop-shadow-[0_0_8px_rgba(255,45,85,0.6)]" 
                   viewBox="0 0 24 24"
                 >
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                 </svg>
               </div>
             </div>
-            <span className="font-black text-2xl tracking-tight text-base-content">
-              Dev<span className="text-primary">Tinder</span>
+            <span className="font-black text-2xl tracking-tight text-white">
+              Dev<span className="bg-gradient-to-r from-rose-500 via-pink-400 to-purple-400 bg-clip-text text-transparent">Tinder</span>
             </span>
           </Link>
         </div>
 
         {/* Center Quick Links for Logged-In Users */}
         {user && (
-          <div className="hidden md:flex items-center gap-1 bg-base-200 p-1.5 rounded-2xl border border-base-300 shadow-sm">
+          <div className="hidden md:flex items-center gap-1.5 bg-slate-950/60 p-1.5 rounded-2xl border border-white/10 shadow-inner backdrop-blur-xl">
             <Link
               to="/feed"
               className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                 isActive("/feed")
-                  ? "bg-primary text-white shadow-md shadow-primary/25"
-                  : "text-base-content/60 hover:text-base-content hover:bg-primary/8"
+                  ? "bg-gradient-to-r from-rose-600 to-pink-500 text-white shadow-md shadow-rose-500/25"
+                  : "text-slate-300 hover:text-white hover:bg-white/10"
               }`}
             >
               <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
@@ -71,8 +72,8 @@ const NavBar = () => {
               to="/connections"
               className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                 isActive("/connections")
-                  ? "bg-primary text-white shadow-md shadow-primary/25"
-                  : "text-base-content/60 hover:text-base-content hover:bg-primary/8"
+                  ? "bg-gradient-to-r from-rose-600 to-pink-500 text-white shadow-md shadow-rose-500/25"
+                  : "text-slate-300 hover:text-white hover:bg-white/10"
               }`}
             >
               <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
@@ -85,8 +86,8 @@ const NavBar = () => {
               to="/requests"
               className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 relative ${
                 isActive("/requests")
-                  ? "bg-primary text-white shadow-md shadow-primary/25"
-                  : "text-base-content/60 hover:text-base-content hover:bg-primary/8"
+                  ? "bg-gradient-to-r from-rose-600 to-pink-500 text-white shadow-md shadow-rose-500/25"
+                  : "text-slate-300 hover:text-white hover:bg-white/10"
               }`}
             >
               <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
@@ -102,16 +103,24 @@ const NavBar = () => {
 
             <Link
               to="/premium"
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
                 isActive("/premium")
-                  ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black shadow-md shadow-amber-500/25"
-                  : "text-amber-500 hover:bg-amber-400/15"
+                  ? "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 shadow-md shadow-amber-500/30 scale-105"
+                  : user?.isPremium
+                  ? "bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20"
+                  : "text-amber-400 hover:bg-amber-400/15"
               }`}
             >
               <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
-              Pro Pass
+              {user?.isPremium ? (
+                <span className="flex items-center gap-1">
+                  <span>Pro VIP</span>
+                </span>
+              ) : (
+                "Pro Pass"
+              )}
             </Link>
           </div>
         )}
@@ -119,13 +128,14 @@ const NavBar = () => {
         {/* User Right Menu */}
         {user ? (
           <div className="flex-none flex items-center gap-3">
-            {/* Theme Toggle – logged-in state */}
-            <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
             <div className="hidden lg:flex flex-col text-right">
-              <span className="text-xs font-black text-white leading-tight">
-                {user.firstName} {user.lastName}
-              </span>
-              <span className="text-[10px] text-emerald-400 font-bold flex items-center justify-end gap-1">
+              <div className="flex items-center gap-1.5 justify-end">
+                <span className="text-xs font-black text-white leading-tight">
+                  {user.firstName} {user.lastName}
+                </span>
+                <MembershipBadge membershipType={user.membershipType} isPremium={user.isPremium} size="sm" />
+              </div>
+              <span className="text-[10px] text-emerald-400 font-bold flex items-center justify-end gap-1 mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
                 Active Now
               </span>
@@ -136,7 +146,7 @@ const NavBar = () => {
               <div 
                 tabIndex={0} 
                 role="button" 
-                className="btn btn-ghost btn-circle avatar ring-2 ring-primary/40 ring-offset-2 ring-offset-base-900 hover:ring-primary transition-all duration-300 shadow-lg"
+                className={`btn btn-ghost btn-circle avatar transition-all duration-300 shadow-lg ${getAvatarRingStyle(user)}`}
               >
                 <div className="w-10 rounded-full overflow-hidden bg-base-800">
                   <img 
@@ -148,11 +158,16 @@ const NavBar = () => {
               </div>
               <ul
                 tabIndex={0}
-                className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-2xl bg-base-900/95 border border-white/10 backdrop-blur-xl rounded-2xl w-60 space-y-1"
+                className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-2xl bg-base-900/95 border border-white/10 backdrop-blur-xl rounded-2xl w-64 space-y-1"
               >
-                <li className="px-3 py-2 border-b border-white/10 mb-1">
-                  <p className="text-xs font-bold text-white leading-none">{user.firstName} {user.lastName}</p>
-                  <p className="text-[10px] text-base-content/50 truncate mt-1">{user.emailId || "Developer Account"}</p>
+                <li className="px-3 py-2.5 border-b border-white/10 mb-1">
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="flex items-center justify-between w-full">
+                      <p className="text-xs font-bold text-white leading-none">{user.firstName} {user.lastName}</p>
+                      <MembershipBadge membershipType={user.membershipType} isPremium={user.isPremium} size="sm" />
+                    </div>
+                    <p className="text-[10px] text-base-content/50 truncate mt-1">{user.emailId || "Developer Account"}</p>
+                  </div>
                 </li>
                 <li>
                   <Link to="/profile" className="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-white/5 transition-colors">
@@ -205,11 +220,9 @@ const NavBar = () => {
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            {/* Theme Toggle – logged-out state */}
-            <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
             <Link
               to="/login"
-              className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white px-6 rounded-2xl h-10 font-bold text-xs shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+              className="btn btn-primary bg-gradient-to-r from-rose-500 to-pink-500 border-none text-white px-6 rounded-2xl h-10 font-bold text-xs shadow-lg shadow-rose-500/20 hover:scale-105 active:scale-95 transition-all"
             >
               Sign In / Register
             </Link>
@@ -219,47 +232,5 @@ const NavBar = () => {
     </div>
   );
 };
-
-/* ── Theme Toggle Button ── */
-const ThemeToggle = ({ isDark, onToggle }) => (
-  <button
-    onClick={onToggle}
-    title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-    className="btn btn-ghost btn-circle w-10 h-10 flex items-center justify-center border border-base-300/50 hover:border-primary/40 hover:bg-primary/10 transition-all duration-300 group"
-    aria-label="Toggle theme"
-  >
-    {isDark ? (
-      // Sun icon for dark mode (click → go light)
-      <svg
-        className="w-5 h-5 text-amber-400 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-        />
-      </svg>
-    ) : (
-      // Moon icon for light mode (click → go dark)
-      <svg
-        className="w-5 h-5 text-primary group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-300"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-        />
-      </svg>
-    )}
-  </button>
-);
 
 export default NavBar;

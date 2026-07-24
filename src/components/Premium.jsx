@@ -2,23 +2,95 @@ import { useState, useEffect } from "react";
 import { BASE_URL } from "../utils/constants";
 import axios from "axios";
 import { Link, useSearchParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { addUser } from "../utils/userSlice";
+import confetti from "canvas-confetti";
+import { MembershipBadge, getTier } from "../utils/membershipUtils";
 
 const Premium = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const paymentStatus = searchParams.get("payment");
+  const sessionId = searchParams.get("session_id");
 
   const [isUserPremium, setIsUserPremium] = useState(false);
+  const [userMembershipType, setUserMembershipType] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showErrorToast, setShowErrorToast] = useState(paymentStatus === "cancel");
+  const dispatch = useDispatch();
+  const loggedInUser = useSelector((store) => store.user);
+
+  const fireConfetti = () => {
+    try {
+      // Golden / Silver Fireworks burst
+      const count = 200;
+      const defaults = {
+        origin: { y: 0.7 },
+        zIndex: 1000,
+      };
+
+      function fire(particleRatio, opts) {
+        confetti({
+          ...defaults,
+          ...opts,
+          particleCount: Math.floor(count * particleRatio),
+        });
+      }
+
+      fire(0.25, {
+        spread: 26,
+        startVelocity: 55,
+        colors: ["#f59e0b", "#fbbf24", "#d97706", "#ffffff"],
+      });
+      fire(0.2, {
+        spread: 60,
+        colors: ["#e2e8f0", "#94a3b8", "#f59e0b"],
+      });
+      fire(0.35, {
+        spread: 100,
+        decay: 0.91,
+        scalar: 0.8,
+      });
+      fire(0.1, {
+        spread: 120,
+        startVelocity: 25,
+        decay: 0.92,
+        colors: ["#fbbf24", "#ffffff"],
+        scalar: 1.2,
+      });
+      fire(0.1, {
+        spread: 120,
+        startVelocity: 45,
+      });
+    } catch (e) {
+      console.log("Confetti trigger error:", e);
+    }
+  };
 
   useEffect(() => {
-    const verifyPremium = async () => {
+    const verifyAndSync = async () => {
       try {
+        // If coming back from Stripe checkout with session_id
+        if (paymentStatus === "success" && sessionId) {
+          try {
+            await axios.post(
+              BASE_URL + "payment/verify",
+              { sessionId },
+              { withCredentials: true }
+            );
+          } catch (e) {
+            console.log("Session verification backup check:", e);
+          }
+        }
+
         const res = await axios.get(BASE_URL + "payment/premium/verify", {
           withCredentials: true,
         });
         if (res.data.isPremium) {
           setIsUserPremium(true);
+          setUserMembershipType(res.data.membershipType);
+          if (res.data.user) {
+            dispatch(addUser(res.data.user));
+          }
         }
       } catch (err) {
         console.error("Failed to verify premium status:", err);
@@ -26,8 +98,15 @@ const Premium = () => {
         setLoading(false);
       }
     };
-    verifyPremium();
-  }, []);
+
+    verifyAndSync();
+  }, [paymentStatus, sessionId, dispatch]);
+
+  useEffect(() => {
+    if (paymentStatus === "success") {
+      fireConfetti();
+    }
+  }, [paymentStatus]);
 
   useEffect(() => {
     if (showErrorToast) {
@@ -62,27 +141,44 @@ const Premium = () => {
     );
   }
 
+  const activeType = userMembershipType || loggedInUser?.membershipType || "Gold";
+  const activeTier = getTier(activeType, true);
+
   if (paymentStatus === "success") {
     return (
-      <div className="flex justify-center items-center min-h-[75vh] p-4">
-        <div className="glass-card max-w-md text-center p-8 sm:p-10 rounded-3xl border border-white/10 shadow-2xl space-y-6">
-          <div className="mx-auto w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center border border-emerald-500/30">
-            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-            </svg>
+      <div className="flex justify-center items-center min-h-[75vh] p-4 animate-slide-up">
+        <div className={`glass-card max-w-lg text-center p-8 sm:p-10 rounded-3xl border ${activeTier === "silver" ? "border-slate-300/40 shadow-slate-300/20" : "border-amber-500/40 shadow-amber-500/20"} shadow-2xl space-y-6 relative overflow-hidden`}>
+          
+          <div className="mx-auto w-24 h-24 bg-gradient-to-tr from-amber-500/20 via-yellow-500/20 to-amber-300/20 rounded-full flex items-center justify-center border border-amber-500/40 shadow-xl animate-pulse">
+            <span className="text-4xl">👑</span>
           </div>
-          <div className="space-y-2">
-            <h1 className="text-3xl font-black text-white">Pro Pass Activated!</h1>
-            <p className="text-sm text-base-content/75 leading-relaxed">
-              Congratulations! Your DevTinder Premium Pass is now active. You have full access to unlimited connection requests and verified badges.
+
+          <div className="space-y-3">
+            <div className="flex justify-center">
+              <MembershipBadge membershipType={activeType} isPremium={true} size="lg" />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+              Welcome to DevTinder {activeTier === "silver" ? "Silver" : "Gold"}!
+            </h1>
+            <p className="text-xs sm:text-sm text-base-content/80 leading-relaxed">
+              Your VIP Membership is active! You now enjoy direct developer socket chat, verified badges, and top feed placement.
             </p>
           </div>
-          <Link
-            to="/feed"
-            className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white w-full rounded-2xl font-black text-xs uppercase tracking-wider h-12 shadow-xl shadow-primary/25 hover:scale-105 transition-all"
-          >
-            Start Swiping Feed
-          </Link>
+
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button
+              onClick={fireConfetti}
+              className="btn btn-outline border-amber-500/40 text-amber-300 hover:bg-amber-500/10 rounded-2xl font-bold text-xs"
+            >
+              🎉 Fire Confetti!
+            </button>
+            <Link
+              to="/feed"
+              className="btn btn-primary bg-gradient-to-r from-amber-500 to-yellow-400 border-none text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-amber-500/25 hover:scale-105 transition-all flex items-center justify-center"
+            >
+              Start Swiping Feed
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -90,22 +186,27 @@ const Premium = () => {
 
   if (isUserPremium) {
     return (
-      <div className="flex justify-center items-center min-h-[75vh] p-4">
-        <div className="glass-card max-w-md text-center p-8 sm:p-10 rounded-3xl border border-amber-500/30 shadow-2xl space-y-6">
-          <div className="mx-auto w-20 h-20 bg-amber-500/20 text-amber-400 rounded-full flex items-center justify-center border border-amber-500/40">
-            <svg className="w-10 h-10 fill-current" viewBox="0 0 20 20">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
+      <div className="flex justify-center items-center min-h-[75vh] p-4 animate-slide-up">
+        <div className={`glass-card max-w-lg text-center p-8 sm:p-10 rounded-3xl border ${activeTier === "silver" ? "border-slate-300/40 shadow-slate-300/20" : "border-amber-500/40 shadow-amber-500/20"} shadow-2xl space-y-6`}>
+          <div className="mx-auto w-20 h-20 bg-amber-500/20 text-amber-400 rounded-full flex items-center justify-center border border-amber-500/40 shadow-lg">
+            <span className="text-3xl">👑</span>
           </div>
-          <div className="space-y-2">
-            <h1 className="text-3xl font-black text-white">DevTinder Premium Active</h1>
+
+          <div className="space-y-3">
+            <div className="flex justify-center">
+              <MembershipBadge membershipType={activeType} isPremium={true} size="lg" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white">
+              VIP Pass Active
+            </h1>
             <p className="text-xs text-base-content/75 leading-relaxed">
-              Your account has full Pro Pass perks including priority card indexing, direct socket chat, and gold verification.
+              Your account has full DevTinder Pro perks including priority card indexing, direct socket chat, and verified member badges.
             </p>
           </div>
+
           <Link
             to="/feed"
-            className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white w-full rounded-2xl font-black text-xs uppercase tracking-wider h-12 shadow-xl shadow-primary/25 hover:scale-105 transition-all"
+            className="btn btn-primary bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 border-none w-full rounded-2xl font-black text-xs uppercase tracking-wider h-12 shadow-xl shadow-amber-500/25 hover:scale-105 transition-all"
           >
             Explore Developer Feed
           </Link>

@@ -2,6 +2,7 @@ import { useDispatch } from "react-redux";
 import { BASE_URL } from "../utils/constants";
 import { removeUserFromFeed } from "../utils/feedSlice";
 import axios from "axios";
+import { MembershipBadge, getCardGlowStyle } from "../utils/membershipUtils";
 
 /* ── Skill → badge colour mapping ── */
 const getSkillStyle = (skill) => {
@@ -27,7 +28,7 @@ const getSkillStyle = (skill) => {
 
 const UserCard = ({ user, onActionAnim }) => {
   if (!user) return null;
-  const { _id, firstName, lastName, photoURL, age, gender, about, skills } = user;
+  const { _id, firstName, lastName, photoURL, age, gender, about, skills, membershipType, isPremium } = user;
   const dispatch = useDispatch();
 
   const handleSendRequest = async (status, targetId) => {
@@ -55,7 +56,7 @@ const UserCard = ({ user, onActionAnim }) => {
   })();
 
   return (
-    <div className="dev-card my-4 group transition-all duration-300 hover:-translate-y-1 animate-slide-up fade-in">
+    <div className={`dev-card my-4 group transition-all duration-300 hover:-translate-y-1 animate-slide-up fade-in ${getCardGlowStyle(user)}`}>
 
       {/* ── Hero Photo ── */}
       <figure className="relative h-[22rem] w-full overflow-hidden">
@@ -76,10 +77,13 @@ const UserCard = ({ user, onActionAnim }) => {
         {/* ── Top pill badges ── */}
         <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2 pointer-events-none">
           {/* Online / status */}
-          <span className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md text-[10px] font-black uppercase tracking-wider text-white px-3 py-1.5 rounded-full border border-white/10">
-            <span className="w-2 h-2 rounded-full bg-accent animate-pulse flex-shrink-0" />
-            Available
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md text-[10px] font-black uppercase tracking-wider text-white px-3 py-1.5 rounded-full border border-white/10">
+              <span className="w-2 h-2 rounded-full bg-accent animate-pulse flex-shrink-0" />
+              Available
+            </span>
+            <MembershipBadge membershipType={membershipType} isPremium={isPremium} size="sm" />
+          </div>
           {/* Age pill */}
           {age && (
             <span className="bg-black/50 backdrop-blur-md text-white text-xs font-black px-3 py-1.5 rounded-full border border-white/10">
