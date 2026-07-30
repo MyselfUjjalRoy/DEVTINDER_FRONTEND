@@ -781,7 +781,7 @@ const Chat = () => {
 
                   {/* Hover actions: reaction + delete */}
                   {!msg.isDeleted && reactionMsgId === msg._id && (
-                    <div className={`absolute ${isSelf ? "-left-16" : "-right-16"} top-1/2 -translate-y-1/2 flex items-center gap-1 transition-opacity duration-150`}>
+                    <div className={`absolute ${isSelf ? "-left-16" : "-right-8"} top-1/2 -translate-y-1/2 flex items-center gap-1 transition-opacity duration-150`}>
                       <button
                         onClick={(e) => { e.stopPropagation(); setActiveReactionPicker(activeReactionPicker === msg._id ? null : msg._id); }}
                         className="w-7 h-7 flex items-center justify-center rounded-full bg-base-900 border border-white/10 shadow-lg hover:bg-base-800 hover:scale-110 transition-all"
@@ -833,7 +833,6 @@ const Chat = () => {
                             </button>
                           );
                         })}
-                        )}
                       </div>
                     </>
                   )}
