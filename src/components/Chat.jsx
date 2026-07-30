@@ -465,6 +465,23 @@ const Chat = () => {
     return found ? found.emoji : null;
   };
 
+  const downloadFile = async (url, filename) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Download error:", err);
+    }
+  };
+
   const partnerName = partner
     ? `${partner.firstName} ${partner.lastName || ""}`
     : "Developer Match";
@@ -903,16 +920,15 @@ const Chat = () => {
                   )}
                 </div>
               )}
-              <a
-                href={attachmentUrl(previewAttachment.url)}
-                download={previewAttachment.name}
+              <button
+                onClick={() => downloadFile(attachmentUrl(previewAttachment.url), previewAttachment.name)}
                 className="absolute top-4 right-14 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all shadow-lg"
                 title="Download"
               >
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-              </a>
+              </button>
               <button
                 onClick={() => setPreviewAttachment(null)}
                 className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all shadow-lg"
