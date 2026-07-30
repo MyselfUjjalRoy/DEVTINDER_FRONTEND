@@ -123,6 +123,7 @@ const Chat = () => {
   const [uploading, setUploading] = useState(false);
   const [showDeleteMenu, setShowDeleteMenu] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState(null);
 
   const user = useSelector((store) => store.user);
   const firstName = user?.firstName;
@@ -693,20 +694,18 @@ const Chat = () => {
                               src={attachmentUrl(msg.attachment.url)}
                               alt={msg.attachment.name}
                               className="max-w-[200px] max-h-[200px] rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => window.open(attachmentUrl(msg.attachment.url), "_blank")}
+                              onClick={() => setPreviewAttachment(msg.attachment)}
                             />
                           ) : (
-                            <a
-                              href={attachmentUrl(msg.attachment.url)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 bg-black/20 rounded-xl px-3 py-2 text-xs hover:bg-black/30 transition-colors"
+                            <button
+                              onClick={() => setPreviewAttachment(msg.attachment)}
+                              className="flex items-center gap-2 bg-black/20 rounded-xl px-3 py-2 text-xs hover:bg-black/30 transition-colors w-full text-left"
                             >
                               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                               </svg>
                               <span className="truncate">{msg.attachment.name}</span>
-                            </a>
+                            </button>
                           )}
                         </div>
                       )}
@@ -878,6 +877,55 @@ const Chat = () => {
           </button>
         </div>
       </div>
+
+      {/* Attachment preview modal */}
+      {previewAttachment && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" onClick={() => setPreviewAttachment(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setPreviewAttachment(null)}>
+            <div className="relative max-w-3xl max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
+              {previewAttachment.type === "image" ? (
+                <img
+                  src={attachmentUrl(previewAttachment.url)}
+                  alt={previewAttachment.name}
+                  className="w-full h-auto max-h-[80vh] object-contain rounded-2xl shadow-2xl"
+                />
+              ) : (
+                <div className="bg-base-900 border border-white/10 rounded-2xl shadow-2xl p-12 flex flex-col items-center gap-6">
+                  <div className="w-20 h-20 rounded-full bg-base-800 flex items-center justify-center">
+                    <svg className="w-10 h-10 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <p className="text-white font-bold text-lg text-center break-all max-w-md">{previewAttachment.name}</p>
+                  {previewAttachment.size && (
+                    <p className="text-white/40 text-xs">{(previewAttachment.size / 1024).toFixed(1)} KB</p>
+                  )}
+                </div>
+              )}
+              <a
+                href={attachmentUrl(previewAttachment.url)}
+                download={previewAttachment.name}
+                className="absolute top-4 right-14 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all shadow-lg"
+                title="Download"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </a>
+              <button
+                onClick={() => setPreviewAttachment(null)}
+                className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all shadow-lg"
+                title="Close"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
