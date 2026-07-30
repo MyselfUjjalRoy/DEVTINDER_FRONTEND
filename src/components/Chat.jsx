@@ -123,8 +123,6 @@ const Chat = () => {
   const [uploading, setUploading] = useState(false);
   const [showDeleteMenu, setShowDeleteMenu] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showChatMenu, setShowChatMenu] = useState(false);
-  const [deletingChat, setDeletingChat] = useState(false);
 
   const user = useSelector((store) => store.user);
   const firstName = user?.firstName;
@@ -466,19 +464,6 @@ const Chat = () => {
     return found ? found.emoji : null;
   };
 
-  const handleDeleteChat = async () => {
-    setDeletingChat(true);
-    try {
-      await axios.delete(BASE_URL + "chat/" + targetUserId, { withCredentials: true });
-      navigate("/");
-    } catch (err) {
-      console.error("Delete chat error:", err);
-    } finally {
-      setDeletingChat(false);
-      setShowChatMenu(false);
-    }
-  };
-
   const partnerName = partner
     ? `${partner.firstName} ${partner.lastName || ""}`
     : "Developer Match";
@@ -539,38 +524,6 @@ const Chat = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </button>
-            <div className="relative">
-              <button
-                onClick={() => setShowChatMenu(!showChatMenu)}
-                className="btn btn-ghost btn-xs text-base-content/60 hover:text-white p-1.5"
-                title="More options"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01" />
-                </svg>
-              </button>
-              {showChatMenu && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={() => setShowChatMenu(null)} />
-                  <div className="absolute right-0 top-full mt-1 z-40 bg-base-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[160px]">
-                    <button
-                      onClick={handleDeleteChat}
-                      disabled={deletingChat}
-                      className="flex items-center gap-2 w-full text-left text-xs text-red-400 hover:bg-base-800 px-4 py-2.5 transition-colors disabled:opacity-50"
-                    >
-                      {deletingChat ? (
-                        <span className="loading loading-spinner loading-xs" />
-                      ) : (
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      )}
-                      Delete chat
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
             {isFetching && (
               <span className="loading loading-spinner loading-sm text-primary"></span>
             )}
