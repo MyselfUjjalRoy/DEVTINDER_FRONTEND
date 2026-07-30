@@ -779,9 +779,9 @@ const Chat = () => {
                     </div>
                   )}
 
-                  {/* Reaction trigger icon — appears on hover */}
+                  {/* Hover actions: reaction + delete */}
                   {!msg.isDeleted && reactionMsgId === msg._id && (
-                    <div className={`absolute ${isSelf ? "-left-8" : "-right-8"} top-1/2 -translate-y-1/2 transition-opacity duration-150`}>
+                    <div className={`absolute ${isSelf ? "-left-16" : "-right-16"} top-1/2 -translate-y-1/2 flex items-center gap-1 transition-opacity duration-150`}>
                       <button
                         onClick={(e) => { e.stopPropagation(); setActiveReactionPicker(activeReactionPicker === msg._id ? null : msg._id); }}
                         className="w-7 h-7 flex items-center justify-center rounded-full bg-base-900 border border-white/10 shadow-lg hover:bg-base-800 hover:scale-110 transition-all"
@@ -791,6 +791,28 @@ const Chat = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </button>
+                      {isSelf && (
+                        <div className="relative">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setShowDeleteMenu(showDeleteMenu === msg._id ? null : msg._id); }}
+                            className="w-7 h-7 flex items-center justify-center rounded-full bg-base-900 border border-white/10 shadow-lg hover:bg-red-500/20 hover:border-red-500/30 hover:scale-110 transition-all"
+                            title="Delete message"
+                          >
+                            <svg className="w-3.5 h-3.5 text-white/60 hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                          {showDeleteMenu === msg._id && (
+                            <>
+                              <div className="fixed inset-0 z-50" onClick={() => setShowDeleteMenu(null)} />
+                              <div className={`absolute top-full ${isSelf ? "right-0" : "left-0"} mt-1 z-50 bg-base-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[160px]`}>
+                                <button onClick={() => handleDeleteMessage(msg._id, "me")} className="block w-full text-left text-xs text-white/80 hover:bg-base-800 px-4 py-2.5 transition-colors">Delete for me</button>
+                                <button onClick={() => handleDeleteMessage(msg._id, "everyone")} className="block w-full text-left text-xs text-red-400 hover:bg-base-800 px-4 py-2.5 transition-colors">Delete for everyone</button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -811,30 +833,6 @@ const Chat = () => {
                             </button>
                           );
                         })}
-                        {isSelf && (
-                          <div className="w-px h-5 bg-white/10 mx-1" />
-                        )}
-                        {isSelf && (
-                          <div className="relative">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setShowDeleteMenu(showDeleteMenu === msg._id ? null : msg._id); }}
-                              className="text-xs text-white/50 hover:text-red-400 transition-colors p-1"
-                              title="Delete message"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                            {showDeleteMenu === msg._id && (
-                              <>
-                                <div className="fixed inset-0 z-50" onClick={() => setShowDeleteMenu(null)} />
-                                <div className="absolute bottom-full right-0 mb-1 z-50 bg-base-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[160px]">
-                                  <button onClick={() => handleDeleteMessage(msg._id, "me")} className="block w-full text-left text-xs text-white/80 hover:bg-base-800 px-4 py-2.5 transition-colors">Delete for me</button>
-                                  <button onClick={() => handleDeleteMessage(msg._id, "everyone")} className="block w-full text-left text-xs text-red-400 hover:bg-base-800 px-4 py-2.5 transition-colors">Delete for everyone</button>
-                                </div>
-                              </>
-                            )}
-                          </div>
                         )}
                       </div>
                     </>
