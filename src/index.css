@@ -337,3 +337,12 @@ html, body, #root {
   65%  { transform: translate(-50%, -50%) scale(0.95) rotate(17deg); opacity: 1; }
   100% { transform: translate(-50%, -50%) scale(1) rotate(15deg);  opacity: 0; }
 }
+
+@keyframes searchHighlight {
+  0%   { box-shadow: 0 0 0 4px rgba(255, 45, 85, 0.5), 0 0 20px rgba(255, 45, 85, 0.2); }
+  50%  { box-shadow: 0 0 0 4px rgba(255, 45, 85, 0.4), 0 0 15px rgba(255, 45, 85, 0.1); }
+  100% { box-shadow: 0 0 0 0px rgba(255, 45, 85, 0), 0 0 0px rgba(255, 45, 85, 0); }
+}
+.search-highlight {
+  animation: searchHighlight 2s ease-out forwards;
+}
