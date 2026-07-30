@@ -1,15 +1,19 @@
 import { BASE_URL } from "../utils/constants";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { addConnections } from "../utils/connectionSlice";
 import { Link } from "react-router-dom";
 import { MembershipBadge, getAvatarRingStyle, getCardGlowStyle } from "../utils/membershipUtils";
+import { createSocketConnection } from "../utils/socket";
 
 const Connections = () => {
   const dispatch = useDispatch();
   const connections = useSelector((store) => store.connections);
   const [searchTerm, setSearchTerm] = useState("");
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const unreadRef = useRef({});
+  const user = useSelector((store) => store.user);
 
   const fetchConnections = async () => {
     try {
@@ -22,9 +26,56 @@ const Connections = () => {
     }
   };
 
+  const fetchUnreadCounts = async () => {
+    try {
+      const res = await axios.get(BASE_URL + "chats/unread", {
+        withCredentials: true,
+      });
+      const map = res.data?.unreadMap || {};
+      setUnreadCounts(map);
+      unreadRef.current = map;
+    } catch (err) {
+      console.error("Error fetching unread counts:", err);
+    }
+  };
+
   useEffect(() => {
     fetchConnections();
+    fetchUnreadCounts();
   }, []);
+
+  // listen for incoming messages to update unread count live
+  useEffect(() => {
+    if (!user?._id) return;
+    const socket = createSocketConnection();
+
+    socket.on("messageReceived", ({ senderId }) => {
+      const fromId = senderId?._id || senderId;
+      if (!fromId || fromId === user._id) return;
+      unreadRef.current = {
+        ...unreadRef.current,
+        [fromId]: (unreadRef.current[fromId] || 0) + 1,
+      };
+      setUnreadCounts({ ...unreadRef.current });
+    });
+
+    socket.on("messagesRead", ({ readByUserId, messageIds }) => {
+      // when this user reads messages (in another tab), decrement our unread for them
+      // not strictly needed for connections page UX
+    });
+
+    return () => {
+      socket.off("messageReceived");
+      socket.off("messagesRead");
+    };
+  }, [user?._id]);
+
+  const clearUnread = (partnerId) => {
+    const copy = { ...unreadRef.current };
+    delete copy[partnerId];
+    unreadRef.current = copy;
+    setUnreadCounts(copy);
+  };
 
   if (!connections) {
     return (
@@ -122,6 +173,7 @@ const Connections = () => {
           {filteredConnections.map((connection) => {
             const { _id, firstName, lastName, photoURL, age, gender, about, skills, membershipType, isPremium } = connection;
             const skillList = Array.isArray(skills) ? skills : [];
+            const unread = unreadCounts[_id] || 0;
 
             return (
               <div
@@ -138,7 +190,7 @@ const Connections = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="text-left space-y-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="font-black text-lg text-white truncate">
@@ -151,7 +203,7 @@ const Connections = () => {
                         </span>
                       )}
                     </div>
-                    
+
                     {about && (
                       <p className="text-xs text-base-content/70 line-clamp-1">
                         {about}
@@ -170,14 +222,25 @@ const Connections = () => {
                   </div>
                 </div>
 
-                <Link to={"/chat/" + _id} className="shrink-0">
-                  <button className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white font-bold text-xs rounded-2xl px-5 h-11 shadow-lg shadow-primary/20 hover:scale-105 transition-all flex items-center gap-2">
-                    <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-4 0H9v2h2V9z" clipRule="evenodd" />
-                    </svg>
-                    Chat
-                  </button>
-                </Link>
+                <div className="shrink-0 flex items-center gap-2">
+                  <Link
+                    to={"/chat/" + _id}
+                    onClick={() => clearUnread(_id)}
+                    className="relative"
+                  >
+                    <button className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white font-bold text-xs rounded-2xl px-4 h-11 shadow-lg shadow-primary/20 hover:scale-105 transition-all flex items-center gap-2">
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-4 0H9v2h2V9z" clipRule="evenodd" />
+                      </svg>
+                      Chat
+                      {unread > 0 && (
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1 shadow-lg shadow-red-500/40">
+                          {unread > 99 ? "99+" : unread}
+                        </span>
+                      )}
+                    </button>
+                  </Link>
+                </div>
               </div>
             );
           })}

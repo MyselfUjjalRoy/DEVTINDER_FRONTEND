@@ -10,7 +10,6 @@ const Feed = () => {
   const dispatch = useDispatch();
   const feed = useSelector((store) => store.feed);
   const [loading, setLoading] = useState(true);
-  const [animClass, setAnimClass] = useState("");
 
   const getFeed = async () => {
     setLoading(true);
@@ -28,38 +27,47 @@ const Feed = () => {
     getFeed();
   }, []);
 
-  const triggerSwipe = useCallback(
-    async (status) => {
+  const handleSwipe = useCallback(
+    async (dir) => {
       if (!feed || feed.length === 0) return;
-      const currentUser = feed[0];
-      setAnimClass(status === "ignored" ? "animate-swipe-left" : "animate-swipe-right");
-
-      setTimeout(async () => {
-        try {
-          await axios.post(
-            `${BASE_URL}request/send/${status}/${currentUser._id}`,
-            {},
-            { withCredentials: true }
-          );
-          dispatch(removeUserFromFeed(currentUser._id));
-        } catch (err) {
-          console.error("Keyboard request error:", err);
-        } finally {
-          setAnimClass("");
-        }
-      }, 250);
+      const targetUser = feed[0];
+      const status = dir === "right" ? "interested" : "ignored";
+      try {
+        await axios.post(
+          `${BASE_URL}request/send/${status}/${targetUser._id}`,
+          {},
+          { withCredentials: true }
+        );
+        dispatch(removeUserFromFeed(targetUser._id));
+      } catch (err) {
+        console.error("Swipe request error:", err);
+      }
     },
     [feed, dispatch]
   );
 
-  // Keyboard shortcut listener: Left Arrow = Pass, Right Arrow = Connect
+  const triggerSwipe = useCallback(
+    async (status) => {
+      if (!feed || feed.length === 0) return;
+      const currentUser = feed[0];
+      try {
+        await axios.post(
+          `${BASE_URL}request/send/${status}/${currentUser._id}`,
+          {},
+          { withCredentials: true }
+        );
+        dispatch(removeUserFromFeed(currentUser._id));
+      } catch (err) {
+        console.error("Keyboard request error:", err);
+      }
+    },
+    [feed, dispatch]
+  );
+
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "ArrowLeft") {
-        triggerSwipe("ignored");
-      } else if (e.key === "ArrowRight") {
-        triggerSwipe("interested");
-      }
+      if (e.key === "ArrowLeft") triggerSwipe("ignored");
+      else if (e.key === "ArrowRight") triggerSwipe("interested");
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -154,15 +162,8 @@ const Feed = () => {
           </div>
         )}
 
-        {/* Current Active Card */}
-        <div className={`w-full z-10 ${animClass}`}>
-          <UserCard 
-            user={currentDev} 
-            onActionAnim={(status) => {
-              setAnimClass(status === "ignored" ? "animate-swipe-left" : "animate-swipe-right");
-              setTimeout(() => setAnimClass(""), 300);
-            }} 
-          />
+        <div className="w-full z-10 animate-slide-up" key={currentDev._id}>
+          <UserCard user={currentDev} onSwipe={handleSwipe} />
         </div>
       </div>
     </div>

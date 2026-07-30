@@ -5,6 +5,31 @@ import { useSelector } from "react-redux";
 import axios from "axios";
 import { BASE_URL } from "../utils/constants";
 
+const TickIcon = ({ status }) => {
+  if (status === "sent") {
+    return (
+      <svg className="w-3.5 h-3.5 text-white/40" viewBox="0 0 16 11" fill="none">
+        <path d="M1 5.5L4.5 9L11 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (status === "delivered") {
+    return (
+      <svg className="w-3.5 h-3.5 text-white/50" viewBox="0 0 16 11" fill="none">
+        <path d="M1 5.5L4.5 9L11 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M6.5 5.5L10 9L16 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  // read
+  return (
+    <svg className="w-3.5 h-3.5 text-[#53bdeb]" viewBox="0 0 16 11" fill="none">
+      <path d="M1 5.5L4.5 9L11 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6.5 5.5L10 9L16 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+};
+
 const Chat = () => {
   const navigate = useNavigate();
   const { targetUserId } = useParams();
@@ -23,6 +48,7 @@ const Chat = () => {
 
   const socketRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const readEmittedRef = useRef(false);
 
   const isAtBottom = () => {
     const container = chatContainerRef.current;
@@ -48,11 +74,13 @@ const Chat = () => {
 
       const chatMessages =
         res?.data?.messages.map((msg) => {
-          const { senderId, text } = msg;
+          const { senderId, text, _id, status } = msg;
           return {
+            _id,
             firstName: senderId?.firstName,
             lastName: senderId?.lastName,
             text,
+            status: status || "sent",
             createdAt: msg.createdAt,
           };
         }) || [];
@@ -116,15 +144,43 @@ const Chat = () => {
     socketRef.current = socket;
     socket.emit("joinChat", { firstName, userId, targetUserId });
 
-    socket.on("messageReceived", ({ firstName, lastName, text }) => {
+    // emit read receipt for the other user's messages
+    readEmittedRef.current = false;
+
+    socket.on("messageReceived", ({ _id, firstName: fName, lastName: lName, text, status }) => {
       const shouldScroll = isAtBottom();
       setMessages((prev) => [
         ...prev,
-        { text, firstName, lastName, createdAt: new Date() },
+        { _id, firstName: fName, lastName: lName, text, status: status || "sent", createdAt: new Date() },
       ]);
       if (shouldScroll) {
         setTimeout(() => scrollToBottom(), 30);
       }
+      // mark incoming messages from the other user as read immediately
+      if (fName !== firstName) {
+        socket.emit("messageRead", { targetUserId });
+      }
+    });
+
+    socket.on("messagesDelivered", ({ byUserId }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.firstName !== firstName && msg.status === "sent"
+            ? { ...msg, status: "delivered" }
+            : msg
+        )
+      );
+    });
+
+    socket.on("messagesRead", ({ readByUserId, messageIds }) => {
+      const idSet = new Set(messageIds.map((id) => id.toString()));
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id && idSet.has(msg._id.toString())
+            ? { ...msg, status: "read" }
+            : msg
+        )
+      );
     });
 
     socket.on("error", (err) => {
@@ -134,11 +190,24 @@ const Chat = () => {
     return () => {
       if (socket) {
         socket.off("messageReceived");
+        socket.off("messagesDelivered");
+        socket.off("messagesRead");
         socket.off("error");
       }
       socketRef.current = null;
     };
   }, [userId, targetUserId]);
+
+  // emit read receipt after messages load
+  useEffect(() => {
+    if (messages.length > 0 && socketRef.current && !readEmittedRef.current) {
+      const hasOtherMessages = messages.some((m) => m.firstName !== firstName);
+      if (hasOtherMessages) {
+        readEmittedRef.current = true;
+        socketRef.current.emit("messageRead", { targetUserId });
+      }
+    }
+  }, [messages, firstName]);
 
   const sendMessage = (textToSend = newMessage) => {
     const msgText = typeof textToSend === "string" ? textToSend : newMessage;
@@ -159,7 +228,7 @@ const Chat = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 my-6">
       <div className="glass-card border border-white/10 h-[80vh] flex flex-col rounded-3xl overflow-hidden shadow-2xl backdrop-blur-2xl">
-        
+
         {/* Header */}
         <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-base-950/80">
           <div className="flex items-center gap-3">
@@ -190,9 +259,11 @@ const Chat = () => {
               </div>
             </div>
           </div>
-          {isFetching && (
-            <span className="loading loading-spinner loading-sm text-primary"></span>
-          )}
+          <div className="flex items-center gap-2">
+            {isFetching && (
+              <span className="loading loading-spinner loading-sm text-primary"></span>
+            )}
+          </div>
         </div>
 
         {/* Messages */}
@@ -245,7 +316,7 @@ const Chat = () => {
             const isSelf = firstName === msg.firstName;
             return (
               <div
-                key={index}
+                key={msg._id || index}
                 className={`chat ${isSelf ? "chat-end" : "chat-start"}`}
               >
                 <div className="chat-header text-[10px] text-base-content/40 mb-1 flex items-center gap-1.5 px-1 font-bold">
@@ -268,6 +339,11 @@ const Chat = () => {
                 >
                   {msg.text}
                 </div>
+                {isSelf && (
+                  <div className="flex justify-end mt-0.5 pr-1">
+                    <TickIcon status={msg.status} />
+                  </div>
+                )}
               </div>
             );
           })}
