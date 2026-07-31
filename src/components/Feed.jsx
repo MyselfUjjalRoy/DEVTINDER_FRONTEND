@@ -4,6 +4,7 @@ import { addFeed, removeUserFromFeed } from "../utils/feedSlice";
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import UserCard from "./UserCard";
+import FeedBackground from "./FeedBackground";
 import { Link } from "react-router-dom";
 
 const Feed = () => {
@@ -75,7 +76,8 @@ const Feed = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[75vh] p-4">
+      <div className="relative flex flex-col justify-center items-center min-h-[75vh] p-4">
+        <FeedBackground />
         {/* Skeleton Matching Deck */}
         <div className="glass-card w-[22.5rem] sm:w-[26rem] h-[36rem] rounded-3xl overflow-hidden animate-pulse border border-white/10 p-6 space-y-6">
           <div className="bg-base-800/80 h-72 w-full rounded-2xl"></div>
@@ -100,7 +102,8 @@ const Feed = () => {
 
   if (!feed || feed.length <= 0) {
     return (
-      <div className="flex justify-center items-center min-h-[75vh] p-4">
+      <div className="relative flex justify-center items-center min-h-[75vh] p-4">
+        <FeedBackground />
         <div className="glass-card max-w-lg text-center p-8 sm:p-10 rounded-3xl border border-white/10 shadow-2xl space-y-6 relative overflow-hidden">
           <div className="absolute -top-12 -right-12 w-36 h-36 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
           <div className="mx-auto w-20 h-20 bg-gradient-to-tr from-primary to-secondary rounded-3xl p-0.5 shadow-xl shadow-primary/25 flex items-center justify-center">
@@ -141,7 +144,8 @@ const Feed = () => {
   const nextDev = feed[1];
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[78vh] p-4 py-8">
+    <div className="relative flex flex-col items-center justify-center min-h-[78vh] p-4 py-8">
+      <FeedBackground />
       {/* Keyboard Shortcut Indicator */}
       <div className="hidden sm:flex items-center gap-4 mb-3 text-xs text-base-content/40 font-bold tracking-wider uppercase">
         <span className="flex items-center gap-1">

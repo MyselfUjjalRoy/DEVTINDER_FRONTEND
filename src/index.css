@@ -358,3 +358,8 @@ html, body, #root {
   transform-origin: bottom;
   animation: waveBounce 0.9s ease-in-out infinite;
 }
+
+/* ─────────────────────────────────────────────
+   FEED BACKGROUND — COLLIDING PARTICLES
+   (canvas-driven; no CSS animations needed)
+───────────────────────────────────────────── */
