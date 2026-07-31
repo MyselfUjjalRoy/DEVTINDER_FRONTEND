@@ -5,6 +5,7 @@ import axios from "axios";
 import { removeUser } from "../utils/userSlice";
 import { useTheme } from "../utils/useTheme";
 import { MembershipBadge, getAvatarRingStyle } from "../utils/membershipUtils";
+import NotificationBell from "./NotificationBell";
 
 const NavBar = () => {
   const user = useSelector((store) => store.user);
@@ -128,6 +129,7 @@ const NavBar = () => {
         {/* User Right Menu */}
         {user ? (
           <div className="flex-none flex items-center gap-3">
+            <NotificationBell />
             <div className="hidden lg:flex flex-col text-right">
               <div className="flex items-center gap-1.5 justify-end">
                 <span className="text-xs font-black text-white leading-tight">

@@ -7,12 +7,15 @@ import { useDispatch, useSelector } from "react-redux";
 import { addUser } from "../utils/userSlice";
 import { useEffect, useState } from "react";
 import { createSocketConnection, disconnectSocket } from "../utils/socket";
+import { addNotification } from "../utils/notificationSlice";
+import NotificationToast from "./NotificationToast";
+import MatchOverlay from "./MatchOverlay";
 
 const Body = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const userData = useSelector((store) => store.user);
-  const [socket, setSocket] = useState(null);
+  const [matchData, setMatchData] = useState(null);
 
   const fetchUser = async () => {
     if (userData) return;
@@ -41,12 +44,27 @@ const Body = () => {
   useEffect(() => {
     if (!userData?._id) {
       disconnectSocket();
-      setSocket(null);
       return;
     }
     const s = createSocketConnection();
-    setSocket(s);
-  }, [userData?._id]);
+
+    const onNotification = (data) => {
+      if (data && data._id) dispatch(addNotification(data));
+    };
+    const onMatch = (data) => {
+      if (data && Array.isArray(data.users) && data.users.length >= 2) {
+        setMatchData(data);
+      }
+    };
+
+    s.on("notification:new", onNotification);
+    s.on("matched", onMatch);
+
+    return () => {
+      s.off("notification:new", onNotification);
+      s.off("matched", onMatch);
+    };
+  }, [userData?._id, dispatch]);
 
   return (
     <div className="flex flex-col min-h-screen relative bg-[#0b0c14] text-slate-100 overflow-x-hidden selection:bg-rose-500/30 selection:text-rose-200">
@@ -63,6 +81,11 @@ const Body = () => {
         </div>
         <Footer />
       </div>
+      <NotificationToast />
+      <MatchOverlay
+        matchData={userData ? matchData : null}
+        onClose={() => setMatchData(null)}
+      />
     </div>
   );
 };
