@@ -29,6 +29,85 @@ const TickIcon = ({ status }) => {
   );
 };
 
+const WAVE_HEIGHTS = [8, 14, 22, 12, 18, 26, 10, 16, 24, 14, 9, 20, 15, 11, 23, 13, 17, 26, 12, 8, 19, 15, 24, 10, 14, 21, 16, 9, 18, 13];
+
+const VoiceMessage = ({ url, isSelf }) => {
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef(null);
+
+  const formatTime = (sec) => {
+    if (!sec || isNaN(sec)) return "0:00";
+    const mins = Math.floor(sec / 60);
+    const secs = Math.floor(sec % 60);
+    return `${mins}:${String(secs).padStart(2, "0")}`;
+  };
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (playing) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+  };
+
+  const resetOnEnd = () => {
+    setPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const barColor = isSelf ? "bg-white/80" : "bg-primary";
+
+  return (
+    <div className="flex items-center gap-3 py-1">
+      <audio
+        ref={audioRef}
+        src={url}
+        preload="metadata"
+        onLoadedMetadata={(e) => setDuration(e.target.duration)}
+        onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={resetOnEnd}
+      />
+      <button
+        onClick={togglePlay}
+        className="w-9 h-9 shrink-0 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-all"
+        title={playing ? "Pause" : "Play"}
+      >
+        {playing ? (
+          <svg className="w-4 h-4 text-white fill-current" viewBox="0 0 24 24">
+            <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
+          </svg>
+        ) : (
+          <svg className="w-4 h-4 text-white fill-current ml-0.5" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        )}
+      </button>
+      <div className="flex items-end gap-[3px] h-7 flex-1 min-w-[80px]">
+        {WAVE_HEIGHTS.map((h, i) => (
+          <span
+            key={i}
+            className={`w-[3px] rounded-full ${barColor} ${playing ? "waveform-bar" : ""}`}
+            style={{
+              height: `${h}px`,
+              opacity: i / WAVE_HEIGHTS.length > 0.7 ? 0.55 : 1,
+              animationDelay: `${(i % 5) * 0.12}s`,
+              transform: playing ? undefined : "scaleY(0.35)",
+            }}
+          />
+        ))}
+      </div>
+      <span className={`text-[10px] font-bold shrink-0 ${isSelf ? "text-white/70" : "text-primary"}`}>
+        {formatTime(playing ? currentTime : duration)}
+      </span>
+    </div>
+  );
+};
+
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 const EMOJI_LIST = [
   "😀","😃","😄","😁","😅","🤣","😂","🙂","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","🥲",
@@ -124,6 +203,8 @@ const Chat = () => {
   const [showDeleteMenu, setShowDeleteMenu] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [previewAttachment, setPreviewAttachment] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
 
   const user = useSelector((store) => store.user);
   const firstName = user?.firstName;
@@ -134,6 +215,12 @@ const Chat = () => {
   const readEmittedRef = useRef(false);
   const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const recordingStreamRef = useRef(null);
+  const recordingTimerRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const cancelRecordingRef = useRef(false);
+  const audioContextRef = useRef(null);
 
   const isAtBottom = () => {
     const container = chatContainerRef.current;
@@ -334,6 +421,18 @@ const Chat = () => {
   }, [userId, targetUserId]);
 
   useEffect(() => {
+    const handleRelease = () => {
+      if (isRecording) stopRecording();
+    };
+    window.addEventListener("mouseup", handleRelease);
+    window.addEventListener("touchend", handleRelease);
+    return () => {
+      window.removeEventListener("mouseup", handleRelease);
+      window.removeEventListener("touchend", handleRelease);
+    };
+  }, [isRecording]);
+
+  useEffect(() => {
     if (messages.length > 0 && socketRef.current && !readEmittedRef.current) {
       const hasOtherMessages = messages.some((m) => m.firstName !== firstName);
       if (hasOtherMessages) {
@@ -374,31 +473,125 @@ const Chat = () => {
     }
   };
 
+  const sendAttachment = (attachment) => {
+    if (socketRef.current) {
+      socketRef.current.emit("sendMessage", {
+        targetUserId,
+        text: "",
+        attachment,
+      });
+      setTimeout(() => scrollToBottom(), 30);
+    }
+  };
+
+  const uploadFile = async (file, type) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await axios.post(BASE_URL + "upload", formData, {
+      withCredentials: true,
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await axios.post(BASE_URL + "upload", formData, {
-        withCredentials: true,
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      const { url, type, name, size } = res.data;
-      if (socketRef.current) {
-        socketRef.current.emit("sendMessage", {
-          targetUserId,
-          text: "",
-          attachment: { url, type, name, size },
-        });
-        setTimeout(() => scrollToBottom(), 30);
-      }
+      const { url, type, name, size } = await uploadFile(file);
+      sendAttachment({ url, type, name, size });
     } catch (err) {
       console.error("Upload error:", err);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const startRecording = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStreamRef.current = stream;
+      audioChunksRef.current = [];
+      cancelRecordingRef.current = false;
+
+      let recorder;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const source = ctx.createMediaStreamSource(stream);
+        const gainNode = ctx.createGain();
+        gainNode.gain.value = 3;
+        const destination = ctx.createMediaStreamDestination();
+        source.connect(gainNode);
+        gainNode.connect(destination);
+        recorder = new MediaRecorder(destination.stream);
+        audioContextRef.current = ctx;
+      } else {
+        recorder = new MediaRecorder(stream);
+      }
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        if (audioContextRef.current) {
+          try { audioContextRef.current.close(); } catch (e) { /* ignore */ }
+          audioContextRef.current = null;
+        }
+        if (cancelRecordingRef.current || audioChunksRef.current.length === 0) return;
+        const blob = new Blob(audioChunksRef.current, {
+          type: recorder.mimeType || "audio/webm",
+        });
+        if (blob.size === 0) return;
+        const ext = (recorder.mimeType || "audio/webm").includes("ogg")
+          ? "ogg"
+          : "webm";
+        const file = new File(
+          [blob],
+          `voice-${Date.now()}.${ext}`,
+          { type: recorder.mimeType || "audio/webm" }
+        );
+        try {
+          const { url, type, name, size } = await uploadFile(file, "audio");
+          sendAttachment({ url, type, name, size });
+        } catch (err) {
+          console.error("Voice upload error:", err);
+        }
+      };
+
+      recorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Mic error:", err);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(recordingTimerRef.current);
+      setRecordingTime(0);
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      cancelRecordingRef.current = true;
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(recordingTimerRef.current);
+      setRecordingTime(0);
     }
   };
 
@@ -713,6 +906,8 @@ const Chat = () => {
                               className="max-w-[200px] max-h-[200px] rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
                               onClick={() => setPreviewAttachment(msg.attachment)}
                             />
+                          ) : msg.attachment.type === "audio" ? (
+                            <VoiceMessage url={attachmentUrl(msg.attachment.url)} isSelf={isSelf} />
                           ) : (
                             <button
                               onClick={() => setPreviewAttachment(msg.attachment)}
@@ -828,7 +1023,7 @@ const Chat = () => {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="btn btn-ghost btn-xs text-base-content/50 hover:text-white p-1.5 disabled:opacity-50"
+            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-2xl bg-base-900 border border-white/10 text-base-content/50 hover:text-white hover:border-white/25 hover:bg-base-800 transition-all disabled:opacity-50"
             title="Attach file"
           >
             {uploading ? (
@@ -840,10 +1035,12 @@ const Chat = () => {
             )}
           </button>
           {/* Emoji picker */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="btn btn-ghost btn-xs text-base-content/50 hover:text-white p-1.5"
+              className={`w-11 h-11 flex items-center justify-center rounded-2xl bg-base-900 border border-white/10 hover:text-white hover:border-white/25 hover:bg-base-800 transition-all ${
+                showEmojiPicker ? "text-primary border-primary/50" : "text-base-content/50"
+              }`}
               title="Emoji"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -872,26 +1069,72 @@ const Chat = () => {
               </>
             )}
           </div>
-          <input
-            value={newMessage}
-            onChange={handleInputChange}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                sendMessage();
-              }
-            }}
-            placeholder="Type a message or code snippet..."
-            className="flex-1 input input-bordered bg-base-900 text-white border-white/10 focus:outline-none focus:border-primary text-xs rounded-2xl h-12 placeholder-base-content/30"
-          />
-          <button
-            onClick={() => sendMessage()}
-            className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white px-6 rounded-2xl h-12 flex items-center gap-2 hover:scale-105 active:scale-95 shadow-xl shadow-primary/20 transition-all font-black text-xs uppercase tracking-wider shrink-0"
-          >
-            <span>Send</span>
-            <svg className="w-4 h-4 fill-current rotate-45 text-white" viewBox="0 0 24 24">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-            </svg>
-          </button>
+          {isRecording ? (
+            <div className="flex items-center gap-3 flex-1 bg-red-500/10 border border-red-500/30 rounded-2xl px-4 h-12">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0"></span>
+              <span className="text-white font-bold text-xs tracking-wider shrink-0">
+                {String(Math.floor(recordingTime / 60)).padStart(2, "0")}:
+                {String(recordingTime % 60).padStart(2, "0")}
+              </span>
+              <span className="text-red-400/70 text-[10px] uppercase tracking-widest font-black">
+                Recording...
+              </span>
+              <button
+                onClick={cancelRecording}
+                className="ml-auto w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-500/20 transition-all shrink-0"
+                title="Cancel recording"
+              >
+                <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <input
+              value={newMessage}
+              onChange={handleInputChange}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  sendMessage();
+                }
+              }}
+              placeholder="Type a message or code snippet..."
+              className="flex-1 input input-bordered bg-base-900 text-white border-white/10 focus:outline-none focus:border-primary text-xs rounded-2xl h-12 placeholder-base-content/30"
+            />
+          )}
+          {isRecording ? (
+            <button
+              onClick={stopRecording}
+              className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white px-5 rounded-2xl h-12 flex items-center gap-2 hover:scale-105 active:scale-95 shadow-xl shadow-primary/20 transition-all font-black text-xs uppercase tracking-wider shrink-0"
+              title="Send voice message"
+            >
+              <span>Send Voice</span>
+            </button>
+          ) : !newMessage.trim() ? (
+            <button
+              onMouseDown={startRecording}
+              onMouseUp={stopRecording}
+              onMouseLeave={stopRecording}
+              onTouchStart={startRecording}
+              onTouchEnd={stopRecording}
+              className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white w-12 rounded-2xl h-12 flex items-center justify-center hover:scale-105 active:scale-95 shadow-xl shadow-primary/20 transition-all shrink-0"
+              title="Press and hold to record voice message"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 14a3 3 0 003-3V5a3 3 0 10-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.92V21h2v-3.08A7 7 0 0019 11h-2z" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              onClick={() => sendMessage()}
+              className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white px-6 rounded-2xl h-12 flex items-center gap-2 hover:scale-105 active:scale-95 shadow-xl shadow-primary/20 transition-all font-black text-xs uppercase tracking-wider shrink-0"
+            >
+              <span>Send</span>
+              <svg className="w-4 h-4 fill-current rotate-45 text-white" viewBox="0 0 24 24">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
@@ -907,6 +1150,16 @@ const Chat = () => {
                   alt={previewAttachment.name}
                   className="w-full h-auto max-h-[80vh] object-contain rounded-2xl shadow-2xl"
                 />
+              ) : previewAttachment.type === "audio" ? (
+                <div className="bg-base-900 border border-white/10 rounded-2xl shadow-2xl p-12 flex flex-col items-center gap-6">
+                  <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
+                    <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11a7 7 0 01-14 0m7 7v4m-4 0h8" />
+                    </svg>
+                  </div>
+                  <p className="text-white font-bold text-lg text-center break-all max-w-md">Voice message</p>
+                  <audio controls autoPlay src={attachmentUrl(previewAttachment.url)} className="w-[320px]" />
+                </div>
               ) : (
                 <div className="bg-base-900 border border-white/10 rounded-2xl shadow-2xl p-12 flex flex-col items-center gap-6">
                   <div className="w-20 h-20 rounded-full bg-base-800 flex items-center justify-center">
