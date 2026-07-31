@@ -189,6 +189,8 @@ const Chat = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
 
+  const [isOnline, setIsOnline] = useState(false);
+
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -305,6 +307,7 @@ const Chat = () => {
     setPartner(null);
     setTypingUser(null);
     setIsTyping(false);
+    setIsOnline(false);
     setShowSearch(false);
     setSearchQuery("");
     setSearchResults([]);
@@ -325,8 +328,21 @@ const Chat = () => {
     const socket = createSocketConnection();
     socketRef.current = socket;
     socket.emit("joinChat", { firstName, userId, targetUserId });
+    socket.emit("checkUserOnline", { userId: targetUserId });
 
     readEmittedRef.current = false;
+
+    socket.on("userOnlineStatus", ({ userId: statusUserId, online }) => {
+      if (statusUserId === targetUserId) setIsOnline(online);
+    });
+
+    socket.on("user:online", ({ userId: onlineUserId }) => {
+      if (onlineUserId === targetUserId) setIsOnline(true);
+    });
+
+    socket.on("user:offline", ({ userId: offlineUserId }) => {
+      if (offlineUserId === targetUserId) setIsOnline(false);
+    });
 
     socket.on("messageReceived", ({ _id, firstName: fName, lastName: lName, text, status, attachment }) => {
       const shouldScroll = isAtBottom();
@@ -407,6 +423,9 @@ const Chat = () => {
 
     return () => {
       if (socket) {
+        socket.off("userOnlineStatus");
+        socket.off("user:online");
+        socket.off("user:offline");
         socket.off("messageReceived");
         socket.off("messagesDelivered");
         socket.off("messagesRead");
@@ -714,11 +733,18 @@ const Chat = () => {
                   <span className="text-[10px] text-primary uppercase tracking-widest font-black animate-pulse">
                     {typingUser} is typing...
                   </span>
-                ) : (
+                ) : isOnline ? (
                   <>
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span className="text-[10px] text-emerald-400 uppercase tracking-widest font-black">
-                      Pair Session Connected
+                      Online
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-white/25"></span>
+                    <span className="text-[10px] text-white/40 uppercase tracking-widest font-black">
+                      Offline
                     </span>
                   </>
                 )}
