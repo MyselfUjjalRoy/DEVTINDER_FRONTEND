@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { BASE_URL } from "../utils/constants";
+import { BASE_URL, resolveMediaUrl } from "../utils/constants";
 import axios from "axios";
 import { removeUser } from "../utils/userSlice";
 import { useTheme } from "../utils/useTheme";
@@ -151,7 +151,7 @@ const NavBar = () => {
                 <div className="w-10 rounded-full overflow-hidden bg-base-800">
                   <img 
                     alt={user.firstName} 
-                    src={user.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=500&q=80"} 
+                    src={resolveMediaUrl(user.photoURL) || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=500&q=80"} 
                     className="object-cover w-full h-full" 
                   />
                 </div>

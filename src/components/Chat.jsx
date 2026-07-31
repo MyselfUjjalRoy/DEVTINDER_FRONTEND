@@ -694,7 +694,7 @@ const Chat = () => {
               <div className="w-11 h-11 rounded-2xl ring-2 ring-primary/40 overflow-hidden bg-base-900">
                 {partner?.photoURL ? (
                   <img
-                    src={partner.photoURL}
+                    src={attachmentUrl(partner.photoURL)}
                     alt={partnerName}
                     className="object-cover w-full h-full select-none"
                   />

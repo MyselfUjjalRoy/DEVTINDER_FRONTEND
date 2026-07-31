@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { MembershipBadge, getCardGlowStyle } from "../utils/membershipUtils";
+import { resolveMediaUrl } from "../utils/constants";
 
 const SWIPE_THRESHOLD = 100;
 
@@ -42,7 +43,7 @@ const HeartParticle = () => {
   );
 };
 
-const UserCard = ({ user, onSwipe }) => {
+const UserCard = ({ user, onSwipe, preview = false }) => {
   if (!user) return null;
   const { firstName, lastName, photoURL, age, gender, about, skills, membershipType, isPremium } = user;
 
@@ -75,7 +76,7 @@ const UserCard = ({ user, onSwipe }) => {
   };
 
   const handlePointerDown = (clientX, clientY) => {
-    if (isExiting.current) return;
+    if (preview || isExiting.current) return;
     isDragging.current = true;
     startPos.current = { x: clientX, y: clientY };
     dragX.current = 0;
@@ -138,7 +139,7 @@ const UserCard = ({ user, onSwipe }) => {
   }, []);
 
   const handleButtonSwipe = (dir) => {
-    if (isExiting.current) return;
+    if (preview || isExiting.current) return;
     const exitX = dir === "right" ? 700 : -700;
     isExiting.current = true;
     setSwipeDir(dir);
@@ -195,7 +196,7 @@ const UserCard = ({ user, onSwipe }) => {
 
       <figure className="relative h-[22rem] w-full overflow-hidden">
         <img
-          src={photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80"}
+          src={resolveMediaUrl(photoURL) || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80"}
           alt={`${firstName} ${lastName}`}
           className="h-full w-full object-cover select-none transition-transform duration-700"
           draggable={false}

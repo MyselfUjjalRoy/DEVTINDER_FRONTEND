@@ -1,4 +1,4 @@
-import { BASE_URL } from "../utils/constants";
+import { BASE_URL, resolveMediaUrl } from "../utils/constants";
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
@@ -184,7 +184,7 @@ const Connections = () => {
                   <div className="avatar shrink-0">
                     <div className={`w-16 h-16 rounded-2xl overflow-hidden bg-base-900 ${getAvatarRingStyle(connection)}`}>
                       <img
-                        src={photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"}
+                        src={resolveMediaUrl(photoURL) || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"}
                         alt={firstName}
                         className="object-cover w-full h-full select-none group-hover:scale-105 transition-transform"
                       />

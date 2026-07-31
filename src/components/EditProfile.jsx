@@ -1,11 +1,17 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { addUser } from "../utils/userSlice";
-import { BASE_URL } from "../utils/constants";
+import { BASE_URL, resolveMediaUrl } from "../utils/constants";
 import UserCard from "./UserCard";
 import { MembershipBadge } from "../utils/membershipUtils";
+
+const AvatarUploadIcon = ({ className }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+);
 
 const EditProfile = ({ user }) => {
   const [firstName, setFirstName] = useState(user?.firstName || "");
@@ -22,7 +28,34 @@ const EditProfile = ({ user }) => {
   const [toastMessage, setToastMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const dispatch = useDispatch();
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError("");
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await axios.post(BASE_URL + "upload", formData, {
+        withCredentials: true,
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setPhotoURL(res.data.url);
+      setToastMessage("Photo Uploaded! Save to apply.");
+      setToast(true);
+      setTimeout(() => setToast(false), 3000);
+    } catch (err) {
+      console.error(err);
+      setError(err?.response?.data?.message || "Photo upload failed.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const saveProfile = async () => {
     setError("");
@@ -130,14 +163,48 @@ const EditProfile = ({ user }) => {
 
               <div className="form-control">
                 <label className="label py-1">
-                  <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">Avatar Image URL</span>
+                  <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">Avatar Photo</span>
                 </label>
                 <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoUpload}
+                />
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="flex-none inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-base-800/80 border border-white/10 text-white text-xs font-bold hover:border-primary/50 hover:bg-base-800 transition-all"
+                  >
+                    {uploading ? (
+                      <span className="loading loading-spinner loading-xs"></span>
+                    ) : (
+                      <AvatarUploadIcon className="w-4 h-4" />
+                    )}
+                    {uploading ? "Uploading..." : "Upload from Device"}
+                  </button>
+                  {photoURL && (
+                    <div className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 bg-base-800 border border-white/10">
+                      <img
+                        src={resolveMediaUrl(photoURL)}
+                        alt="Avatar preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="text-[10px] text-base-content/40 font-bold uppercase tracking-wider flex-shrink-0">or paste image URL</span>
+                  <div className="flex-1 h-px bg-white/10" />
+                </div>
+                <input
                   type="text"
-                  className="input input-bordered bg-base-900/60 border-white/10 text-white focus:outline-none focus:border-primary text-xs rounded-xl h-11"
-                  value={photoURL}
+                  className="input input-bordered bg-base-900/60 border-white/10 text-white focus:outline-none focus:border-primary text-xs rounded-xl h-11 mt-3"
+                  value={photoURL.startsWith("/uploads/") ? "" : photoURL}
                   onChange={(e) => setPhotoURL(e.target.value)}
-                  required
                   placeholder="https://example.com/avatar.jpg"
                 />
               </div>
@@ -279,13 +346,14 @@ const EditProfile = ({ user }) => {
 
         {/* Right Column: Live Card Preview */}
         <div className="lg:col-span-5 flex flex-col items-center">
-          <div className="sticky top-24 w-full flex flex-col items-center lg:items-start space-y-3">
-            <span className="text-[10px] uppercase font-black tracking-widest text-primary flex items-center gap-1.5 pl-1">
+          <div className="sticky top-24 w-full flex flex-col items-center space-y-4">
+            <span className="inline-flex items-center gap-2 text-[10px] uppercase font-black tracking-[0.2em] text-primary pl-1">
               <span className="w-2 h-2 rounded-full bg-primary animate-ping"></span>
               Live Card Preview
             </span>
             <div className="flex justify-center w-full">
               <UserCard
+                preview
                 user={{
                   _id: user?._id || "preview-id",
                   firstName: firstName || "Your",
