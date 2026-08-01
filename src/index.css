@@ -436,3 +436,116 @@ html, body, #root {
     transparent 55%
   );
 }
+
+/* ─────────────────────────────────────────────
+   PREMIUM AUTH — FUTURISTIC LOGIN EXPERIENCE
+───────────────────────────────────────────── */
+@keyframes auroraDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(50px, -35px) scale(1.15); }
+  66%      { transform: translate(-40px, 30px) scale(0.92); }
+}
+.animate-aurora { animation: auroraDrift 16s ease-in-out infinite; }
+
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient {
+  background-size: 220% 220%;
+  animation: gradientShift 7s ease infinite;
+}
+
+@keyframes blinkCursor {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
+.typewriter-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: linear-gradient(to bottom, #ff2d55, #bf5af2);
+  animation: blinkCursor 0.85s step-end infinite;
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+.animate-float-y { animation: floatY 5s ease-in-out infinite; }
+
+@keyframes shineSweep {
+  0%   { transform: translateX(-140%) skewX(-20deg); }
+  100% { transform: translateX(260%) skewX(-20deg); }
+}
+.btn-shine { position: relative; overflow: hidden; }
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: translateX(-140%) skewX(-20deg);
+}
+.btn-shine:hover::after { animation: shineSweep 0.9s ease; }
+
+@keyframes gridScroll {
+  0%   { background-position: 0 0, 0 0; }
+  100% { background-position: 0 46px, 0 46px; }
+}
+.auth-grid-floor {
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: -10px;
+  height: 55vh;
+  background-image:
+    linear-gradient(rgba(255, 45, 85, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(191, 90, 242, 0.09) 1px, transparent 1px);
+  background-size: 46px 46px;
+  transform: perspective(520px) rotateX(58deg);
+  transform-origin: bottom;
+  animation: gridScroll 14s linear infinite;
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent 85%);
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent 85%);
+  pointer-events: none;
+}
+
+.auth-border-animated {
+  background: linear-gradient(
+    120deg,
+    rgba(255, 45, 85, 0.75),
+    rgba(191, 90, 242, 0.75),
+    rgba(56, 130, 246, 0.55),
+    rgba(255, 45, 85, 0.75)
+  );
+  background-size: 300% 300%;
+  animation: gradientShift 9s linear infinite;
+}
+
+.auth-glass-panel {
+  background: rgba(13, 14, 24, 0.88);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.auth-glare {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  background: radial-gradient(
+    circle at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(255, 255, 255, 0.10),
+    transparent 55%
+  );
+}
