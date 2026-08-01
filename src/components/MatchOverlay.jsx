@@ -173,6 +173,7 @@ const MatchOverlay = ({ matchData, onClose }) => {
   const navigate = useNavigate();
   const me = useSelector((store) => store.user);
   const sceneRef = useRef(null);
+  const glareRef = useRef(null);
 
   useEffect(() => {
     if (matchData) {
@@ -205,14 +206,14 @@ const MatchOverlay = ({ matchData, onClose }) => {
     el.style.transform = `rotateX(${(-py * 10).toFixed(2)}deg) rotateY(${(px * 10).toFixed(2)}deg)`;
     el.style.setProperty("--glare-x", `${((px + 0.5) * 100).toFixed(1)}%`);
     el.style.setProperty("--glare-y", `${((py + 0.5) * 100).toFixed(1)}%`);
-    el.style.opacity = "1";
+    if (glareRef.current) glareRef.current.style.opacity = "1";
   };
 
   const handlePointerLeave = () => {
     const el = sceneRef.current;
     if (!el) return;
     el.style.transform = "rotateX(0deg) rotateY(0deg)";
-    el.style.opacity = "0";
+    if (glareRef.current) glareRef.current.style.opacity = "0";
   };
 
   const handleMessage = () => {
@@ -265,7 +266,7 @@ const MatchOverlay = ({ matchData, onClose }) => {
         onMouseMove={handlePointerMove}
         onMouseLeave={handlePointerLeave}
       >
-        <div className="match-scene-glare" />
+        <div ref={glareRef} className="match-scene-glare" />
 
         <div className="relative space-y-7" style={{ transformStyle: "preserve-3d" }}>
           <div className="space-y-2.5">
