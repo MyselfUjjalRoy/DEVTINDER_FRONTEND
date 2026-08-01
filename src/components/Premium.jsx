@@ -250,7 +250,7 @@ const Premium = () => {
                 Silver Dev Pass
               </h2>
               <div className="flex items-baseline gap-1 mt-3 text-white">
-                <span className="text-5xl font-black">$9.99</span>
+                <span className="text-5xl font-black">₹300</span>
                 <span className="text-xs text-base-content/50 font-bold">/ 3 Months</span>
               </div>
             </div>
@@ -299,7 +299,7 @@ const Premium = () => {
                 Gold Pro Pass
               </h2>
               <div className="flex items-baseline gap-1 mt-3 text-white">
-                <span className="text-5xl font-black">$19.99</span>
+                <span className="text-5xl font-black">₹700</span>
                 <span className="text-xs text-base-content/50 font-bold">/ 6 Months</span>
               </div>
             </div>
