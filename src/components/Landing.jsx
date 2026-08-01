@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import ConstellationBackground from "./ConstellationBackground";
 import Reveal from "./Reveal";
@@ -27,6 +27,20 @@ const TECHS = [
   { name: "Vue", color: "text-teal-400" },
   { name: "Angular", color: "text-red-400" },
 ];
+
+const GLYPHS = [
+  { symbol: "</>", left: "6%", delay: "0s", dur: "18s", opacity: "0.25" },
+  { symbol: "{ }", left: "14%", delay: "-6s", dur: "22s", opacity: "0.2" },
+  { symbol: "=>", left: "24%", delay: "-12s", dur: "20s", opacity: "0.18" },
+  { symbol: "git", left: "36%", delay: "-4s", dur: "24s", opacity: "0.22" },
+  { symbol: "#", left: "48%", delay: "-15s", dur: "19s", opacity: "0.28" },
+  { symbol: "npm i", left: "60%", delay: "-8s", dur: "23s", opacity: "0.18" },
+  { symbol: "[]", left: "72%", delay: "-2s", dur: "21s", opacity: "0.24" },
+  { symbol: "</>", left: "84%", delay: "-10s", dur: "18s", opacity: "0.2" },
+  { symbol: "//", left: "92%", delay: "-14s", dur: "22s", opacity: "0.22" },
+];
+
+const TICKER_WORDS = ["MATCH", "CODE", "BUILD", "PAIR", "SHIP", "GROW", "CONNECT"];
 
 const STATS = [
   { end: 10, suffix: "K+", decimals: 0, label: "Active Developers", gradient: "from-rose-400 to-pink-400" },
@@ -200,6 +214,31 @@ const Landing = () => {
   const typed = useTypewriter(HERO_TAGLINES);
   const deckRef = useRef(null);
   const glareRef = useRef(null);
+  const blob1Ref = useRef(null);
+  const blob2Ref = useRef(null);
+  const heroGlowRef = useRef(null);
+  const gridRef = useRef(null);
+
+  useEffect(() => {
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const y = window.scrollY;
+        if (blob1Ref.current) blob1Ref.current.style.transform = `translateY(${y * 0.18}px)`;
+        if (blob2Ref.current) blob2Ref.current.style.transform = `translateY(${y * -0.14}px)`;
+        if (heroGlowRef.current) heroGlowRef.current.style.transform = `translateY(${y * 0.12}px)`;
+        if (gridRef.current) {
+          gridRef.current.style.transform = `translateY(${y * 0.22}px) perspective(520px) rotateX(58deg)`;
+        }
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
 
   const handleDeckTilt = (e) => {
     const el = deckRef.current;
@@ -226,15 +265,32 @@ const Landing = () => {
       <ConstellationBackground />
 
       {/* Aurora blobs */}
-      <div className="absolute top-10 left-10 w-96 h-96 bg-primary/20 rounded-full blur-[130px] pointer-events-none animate-aurora"></div>
-      <div className="absolute top-1/3 right-10 w-[30rem] h-[30rem] bg-secondary/15 rounded-full blur-[140px] pointer-events-none animate-aurora" style={{ animationDelay: "-6s" }}></div>
+      <div ref={blob1Ref} className="absolute top-10 left-10 w-96 h-96 will-change-transform">
+        <div className="absolute inset-0 bg-primary/20 rounded-full blur-[130px] pointer-events-none animate-aurora"></div>
+      </div>
+      <div ref={blob2Ref} className="absolute top-1/3 right-10 w-[30rem] h-[30rem] will-change-transform">
+        <div className="absolute inset-0 bg-secondary/15 rounded-full blur-[140px] pointer-events-none animate-aurora" style={{ animationDelay: "-6s" }}></div>
+      </div>
       <div className="absolute bottom-10 left-1/4 w-80 h-80 bg-accent/15 rounded-full blur-[110px] pointer-events-none animate-aurora" style={{ animationDelay: "-11s" }}></div>
 
       {/* Futuristic grid floor */}
-      <div className="grid-floor hidden lg:block"></div>
+      <div ref={gridRef} className="grid-floor hidden lg:block"></div>
 
       {/* ════════════ HERO ════════════ */}
       <section className="relative max-w-7xl mx-auto px-4 pt-20 pb-24 sm:px-6 lg:px-8 text-center flex flex-col items-center">
+        {/* rising code glyphs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden hidden md:block" aria-hidden="true">
+          {GLYPHS.map((g, i) => (
+            <span
+              key={i}
+              className="hero-glyph"
+              style={{ left: g.left, animationDuration: g.dur, animationDelay: g.delay, "--glyph-opacity": g.opacity }}
+            >
+              {g.symbol}
+            </span>
+          ))}
+        </div>
+
         {/* Announcement badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-black uppercase tracking-wider mb-8 shadow-lg shadow-primary/10 animate-slide-up">
           <span className="relative flex h-2 w-2">
@@ -247,7 +303,11 @@ const Landing = () => {
         {/* Hero Title */}
         <div className="relative w-full max-w-5xl animate-slide-up" style={{ animationDelay: "0.1s" }}>
           {/* glow behind headline */}
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto w-3/4 h-28 bg-gradient-to-r from-rose-500/30 via-purple-500/25 to-cyan-400/30 rounded-full blur-[90px] pointer-events-none animate-pulse-glow"></div>
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto w-3/4 h-28 pointer-events-none">
+            <div ref={heroGlowRef} className="w-full h-full will-change-transform">
+              <div className="w-full h-full bg-gradient-to-r from-rose-500/30 via-purple-500/25 to-cyan-400/30 rounded-full blur-[90px] animate-pulse-glow"></div>
+            </div>
+          </div>
 
           <h1 className="relative text-5xl sm:text-7xl md:text-8xl font-black text-white tracking-tight leading-[1.02]">
             <span className="block">Where Developers</span>
@@ -306,6 +366,7 @@ const Landing = () => {
         </div>
 
         {/* Live Interactive Deck Card Mockup — mirrors the real feed card */}
+        <Reveal className="w-full">
         <div className="relative w-full max-w-md mx-auto mt-16">
           {/* ambient glow */}
           <div className="absolute inset-x-8 inset-y-4 bg-gradient-to-tr from-primary/40 via-secondary/30 to-accent/40 rounded-3xl blur-2xl pointer-events-none animate-pulse-glow"></div>
@@ -319,14 +380,44 @@ const Landing = () => {
           <div className="float-heart text-pink-400 text-sm" style={{ left: "88%", animationDuration: "3.6s", animationDelay: "-1.4s" }}>♥</div>
           <div className="float-heart text-purple-400 text-base" style={{ left: "78%", animationDuration: "4.2s", animationDelay: "-2.2s" }}>♥</div>
 
-          {/* floating code chips */}
-          <div className="absolute -left-12 top-16 hidden xl:block glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y">
+          {/* floating code chips — visible on all screens */}
+          <div className="absolute -left-3 sm:-left-10 -top-6 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y">
             <span className="text-xs font-mono text-cyan-400">{"</>"}</span>
             <span className="text-xs font-mono text-white/70 ml-1">deploy();</span>
           </div>
-          <div className="absolute -right-12 bottom-24 hidden xl:block glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-2.5s" }}>
+          <div className="absolute -right-3 sm:-right-10 bottom-24 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-2.5s" }}>
             <span className="text-xs font-mono text-amber-400">git push</span>
             <span className="text-xs text-emerald-400 ml-1">✓ shipped</span>
+          </div>
+          <div className="absolute -left-3 sm:-left-8 bottom-8 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-4s" }}>
+            <span className="text-xs font-mono text-purple-400">{"<pair />"}</span>
+          </div>
+          <div className="absolute -right-3 sm:-right-6 top-16 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-1.2s" }}>
+            <span className="text-xs font-mono text-emerald-400">{"() =>"}</span>
+            <span className="text-xs text-white/60 ml-1">build()</span>
+          </div>
+
+          {/* rotating badge */}
+          <div className="absolute -top-8 -right-4 sm:-right-8 z-10 hidden sm:block">
+            <div className="relative w-28 h-28">
+              <div className="absolute inset-0 animate-spin-slow">
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                  <defs>
+                    <path id="pair-circle" d="M50,50 m-36,0 a36,36 0 1,1 72,0 a36,36 0 1,1 -72,0" />
+                  </defs>
+                  <text fill="rgba(255,255,255,0.75)" fontSize="10" fontWeight="700" letterSpacing="2.5">
+                    <textPath href="#pair-circle">OPEN TO PAIR PROGRAMMING • DEVTINDER •</textPath>
+                  </text>
+                </svg>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-rose-500 via-pink-500 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-rose-500/40 border border-white/20 animate-heartbeat">
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="animate-float-slow">
@@ -506,6 +597,7 @@ const Landing = () => {
             </div>
           </div>
         </div>
+        </Reveal>
 
         {/* Tech Marquee */}
         <div className="mt-20 w-full max-w-5xl tech-marquee-mask overflow-hidden">
@@ -516,6 +608,19 @@ const Landing = () => {
                 className={`glass-card shrink-0 px-5 py-2.5 rounded-xl border border-white/10 text-sm font-bold ${t.color} whitespace-nowrap`}
               >
                 {t.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════ TICKER ════════════ */}
+      <section className="relative border-y border-white/5 bg-base-900/40 py-8 overflow-hidden" aria-hidden="true">
+        <div className="ticker-mask">
+          <div className="ticker-track">
+            {[...TICKER_WORDS, ...TICKER_WORDS].map((w, i) => (
+              <span key={i} className={`ticker-word ${i % 2 === 0 ? "ticker-word--fill" : ""}`}>
+                {w}
               </span>
             ))}
           </div>
@@ -593,7 +698,7 @@ const Landing = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {FEATURES.map((f, i) => (
               <Reveal key={f.title} delay={(i % 3) * 100}>
-                <div className="glass-card p-8 rounded-3xl space-y-4 border border-white/10 hover:border-primary/40 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 group h-full">
+                <div className="sweep-card glass-card p-8 rounded-3xl space-y-4 border border-white/10 hover:border-primary/40 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 group h-full">
                   <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${f.gradient} ${f.glow} shadow-lg flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300`}>
                     {f.icon}
                   </div>
