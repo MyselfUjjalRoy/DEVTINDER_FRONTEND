@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import ConstellationBackground from "./ConstellationBackground";
 import Reveal from "./Reveal";
@@ -40,7 +40,16 @@ const GLYPHS = [
   { symbol: "//", left: "92%", delay: "-14s", dur: "22s", opacity: "0.22" },
 ];
 
-const TICKER_WORDS = ["MATCH", "CODE", "BUILD", "PAIR", "SHIP", "GROW", "CONNECT"];
+const ACTIVITIES = [
+  { prompt: "$", icon: "♥", color: "text-rose-400", text: "Sarah & Aditya just matched", time: "2m" },
+  { prompt: ">", icon: "$", color: "text-cyan-400", text: "rohan pushed 3 commits to pair-app", time: "4m" },
+  { prompt: "$", icon: "✓", color: "text-emerald-400", text: "dev-squad shipped devtinder-chat v2.1", time: "7m" },
+  { prompt: ">", icon: "★", color: "text-amber-400", text: "priya unlocked Gold Pro Pass", time: "9m" },
+  { prompt: "$", icon: "▲", color: "text-purple-400", text: "anjali joined the developer feed", time: "12m" },
+  { prompt: ">", icon: "$", color: "text-cyan-400", text: "arjun deployed to production", time: "15m" },
+  { prompt: "$", icon: "♥", color: "text-rose-400", text: "meera & kabir are in a pair session", time: "18m" },
+  { prompt: ">", icon: "✓", color: "text-emerald-400", text: "team-synergy passed CI/CD pipeline", time: "21m" },
+];
 
 const PLANS = [
   {
@@ -268,9 +277,28 @@ const MOCK_LINKS = [
 ];
 
 const CountStat = ({ end, suffix = "", decimals = 0, label, gradient }) => {
-  const value = useCountUp(end);
+  const ref = useRef(null);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setStarted(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.35 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const value = useCountUp(started ? end : 0);
   return (
-    <div className="glass-card p-6 rounded-2xl border border-white/5 text-center group hover:border-white/20 hover:-translate-y-1 transition-all duration-300">
+    <div ref={ref} className="glass-card p-6 rounded-2xl border border-white/5 text-center group hover:border-white/20 hover:-translate-y-1 transition-all duration-300">
       <span className={`text-3xl font-black bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>
         {value.toFixed(decimals)}
         {suffix}
@@ -282,12 +310,17 @@ const CountStat = ({ end, suffix = "", decimals = 0, label, gradient }) => {
 
 const Landing = () => {
   const typed = useTypewriter(HERO_TAGLINES);
+  const onlineDevs = useCountUp(1287);
   const deckRef = useRef(null);
   const glareRef = useRef(null);
   const blob1Ref = useRef(null);
   const blob2Ref = useRef(null);
   const heroGlowRef = useRef(null);
   const gridRef = useRef(null);
+  const heroTextRef = useRef(null);
+  const spotRef = useRef(null);
+  const ctaRef = useRef(null);
+  const ctaGlareRef = useRef(null);
 
   useEffect(() => {
     let raf = 0;
@@ -301,11 +334,24 @@ const Landing = () => {
         if (gridRef.current) {
           gridRef.current.style.transform = `translateY(${y * 0.22}px) perspective(520px) rotateX(58deg)`;
         }
+        if (heroTextRef.current) {
+          const p = Math.min(y / 650, 1);
+          heroTextRef.current.style.opacity = `${1 - p * 0.7}`;
+          heroTextRef.current.style.transform = `translateY(${y * 0.12}px)`;
+          heroTextRef.current.style.filter = `blur(${(p * 4).toFixed(1)}px)`;
+        }
       });
     };
+    const onMove = (e) => {
+      if (!spotRef.current) return;
+      spotRef.current.style.setProperty("--spot-x", `${e.clientX}px`);
+      spotRef.current.style.setProperty("--spot-y", `${e.clientY}px`);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("mousemove", onMove, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("mousemove", onMove);
       cancelAnimationFrame(raf);
     };
   }, []);
@@ -330,6 +376,26 @@ const Landing = () => {
     if (glareRef.current) glareRef.current.style.opacity = "0";
   };
 
+  const handleCtaTilt = (e) => {
+    const el = ctaRef.current;
+    if (!el) return;
+    if (window.matchMedia("(hover: none)").matches) return;
+    const rect = el.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width - 0.5;
+    const py = (e.clientY - rect.top) / rect.height - 0.5;
+    el.style.transform = `perspective(1200px) rotateX(${(-py * 4).toFixed(2)}deg) rotateY(${(px * 4).toFixed(2)}deg) scale(1.01)`;
+    el.style.setProperty("--glare-x", `${((px + 0.5) * 100).toFixed(1)}%`);
+    el.style.setProperty("--glare-y", `${((py + 0.5) * 100).toFixed(1)}%`);
+    if (ctaGlareRef.current) ctaGlareRef.current.style.opacity = "1";
+  };
+
+  const handleCtaTiltLeave = () => {
+    const el = ctaRef.current;
+    if (!el) return;
+    el.style.transform = "perspective(1200px) rotateX(0deg) rotateY(0deg) scale(1)";
+    if (ctaGlareRef.current) ctaGlareRef.current.style.opacity = "0";
+  };
+
   return (
     <div className="relative overflow-hidden bg-base-950 text-base-content min-h-screen">
       <ConstellationBackground />
@@ -345,6 +411,9 @@ const Landing = () => {
 
       {/* Futuristic grid floor */}
       <div ref={gridRef} className="grid-floor hidden lg:block"></div>
+
+      {/* Cursor spotlight */}
+      <div ref={spotRef} className="cursor-spotlight pointer-events-none fixed inset-0 z-[5]"></div>
 
       {/* ════════════ HERO ════════════ */}
       <section className="relative max-w-7xl mx-auto px-4 pt-20 pb-24 sm:px-6 lg:px-8 text-center flex flex-col items-center">
@@ -362,6 +431,7 @@ const Landing = () => {
         </div>
 
         {/* Announcement badge */}
+        <div ref={heroTextRef} className="flex flex-col items-center w-full will-change-transform">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-black uppercase tracking-wider mb-8 shadow-lg shadow-primary/10 animate-slide-up">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
@@ -434,6 +504,7 @@ const Landing = () => {
             </span>
           </a>
         </div>
+        </div>
 
         {/* Live Interactive Deck Card Mockup — mirrors the real feed card */}
         <Reveal className="w-full">
@@ -450,19 +521,19 @@ const Landing = () => {
           <div className="float-heart text-pink-400 text-sm" style={{ left: "88%", animationDuration: "3.6s", animationDelay: "-1.4s" }}>♥</div>
           <div className="float-heart text-purple-400 text-base" style={{ left: "78%", animationDuration: "4.2s", animationDelay: "-2.2s" }}>♥</div>
 
-          {/* floating code chips — visible on all screens */}
-          <div className="absolute -left-3 sm:-left-10 -top-6 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y">
+          {/* floating code chips — floating OUTSIDE the card */}
+          <div className="absolute -left-4 sm:-left-16 -top-6 sm:-top-10 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y">
             <span className="text-xs font-mono text-cyan-400">{"</>"}</span>
             <span className="text-xs font-mono text-white/70 ml-1">deploy();</span>
           </div>
-          <div className="absolute -right-3 sm:-right-10 bottom-24 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-2.5s" }}>
+          <div className="absolute -right-4 sm:-right-16 top-20 sm:top-28 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-2.5s" }}>
             <span className="text-xs font-mono text-amber-400">git push</span>
             <span className="text-xs text-emerald-400 ml-1">✓ shipped</span>
           </div>
-          <div className="absolute -left-3 sm:-left-8 bottom-8 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-4s" }}>
+          <div className="absolute -left-4 sm:-left-20 bottom-20 sm:bottom-24 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-4s" }}>
             <span className="text-xs font-mono text-purple-400">{"<pair />"}</span>
           </div>
-          <div className="absolute -right-3 sm:-right-6 top-16 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-1.2s" }}>
+          <div className="absolute -right-4 sm:-right-16 -bottom-8 sm:-bottom-10 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-1.2s" }}>
             <span className="text-xs font-mono text-emerald-400">{"() =>"}</span>
             <span className="text-xs text-white/60 ml-1">build()</span>
           </div>
@@ -677,16 +748,62 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ════════════ TICKER ════════════ */}
-      <section className="relative border-y border-white/5 bg-base-900/40 py-8 overflow-hidden" aria-hidden="true">
-        <div className="ticker-mask">
-          <div className="ticker-track">
-            {[...TICKER_WORDS, ...TICKER_WORDS].map((w, i) => (
-              <span key={i} className={`ticker-word ${i % 2 === 0 ? "" : "ticker-word--alt"}`}>
-                {w}
+      {/* ════════════ LIVE ACTIVITY FEED ════════════ */}
+      <section className="relative border-y border-white/5 bg-base-900/40 py-16 overflow-hidden">
+        <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-rose-500/10 blur-3xl"></div>
+        <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-cyan-500/10 blur-3xl"></div>
+        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Reveal className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 text-emerald-300 text-[11px] font-black uppercase tracking-widest">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
               </span>
-            ))}
-          </div>
+              Live on DevTinder
+            </div>
+            <h3 className="text-3xl sm:text-5xl font-black text-white tracking-tight mt-4">
+              Devs are{" "}
+              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient">
+                shipping together
+              </span>
+            </h3>
+            <p className="text-base text-base-content/60 max-w-xl mx-auto mt-3">
+              Matches are happening, code is merging, teams are forming — right now.
+            </p>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <div className="glass-card rounded-2xl border border-white/10 overflow-hidden shadow-2xl shadow-black/40">
+              {/* terminal header */}
+              <div className="flex items-center justify-between px-4 py-3 bg-[#0b0c14]/95 border-b border-white/10">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-rose-500"></span>
+                  <span className="w-3 h-3 rounded-full bg-amber-400"></span>
+                  <span className="w-3 h-3 rounded-full bg-emerald-400"></span>
+                </div>
+                <span className="hidden sm:block text-[10px] font-bold text-white/60 uppercase tracking-widest font-mono">
+                  devtinder — live activity
+                </span>
+                <span className="text-[10px] font-black text-emerald-300 font-mono animate-pulse">● LIVE</span>
+              </div>
+
+              {/* scrolling feed */}
+              <div className="feed-window relative h-60 overflow-hidden">
+                <div className="feed-track">
+                  {[...ACTIVITIES, ...ACTIVITIES].map((a, i) => (
+                    <div key={i} className="flex items-center gap-3 px-5 py-2.5 border-b border-white/5">
+                      <span className="text-[11px] font-black font-mono text-white/30 w-4 shrink-0">{a.prompt}</span>
+                      <span className={`text-[11px] font-black ${a.color} w-4 shrink-0`}>{a.icon}</span>
+                      <p className="text-xs font-semibold text-white/85 truncate">{a.text}</p>
+                      <span className="ml-auto text-[10px] text-white/40 font-mono shrink-0">{a.time} ago</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-[#0c0d16] to-transparent pointer-events-none"></div>
+                <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0c0d16] to-transparent pointer-events-none"></div>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
@@ -857,11 +974,45 @@ const Landing = () => {
 
       {/* ════════════ FINAL CTA ════════════ */}
       <section className="relative max-w-5xl mx-auto px-4 py-24 sm:px-6 lg:px-8">
+        {/* ambient bg */}
+        <div className="absolute top-1/3 -left-20 w-80 h-80 bg-rose-500/15 rounded-full blur-[110px] pointer-events-none animate-aurora"></div>
+        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-cyan-500/15 rounded-full blur-[120px] pointer-events-none animate-aurora" style={{ animationDelay: "-7s" }}></div>
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 w-2/3 h-40 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse-glow"></div>
+
+        {/* floating code glyphs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          <span className="hero-glyph" style={{ left: "8%", animationDuration: "16s", animationDelay: "-2s", "--glyph-opacity": "0.28" }}>{"</>"}</span>
+          <span className="hero-glyph" style={{ left: "88%", animationDuration: "19s", animationDelay: "-8s", "--glyph-opacity": "0.22" }}>npm i</span>
+          <span className="hero-glyph" style={{ left: "95%", animationDuration: "21s", animationDelay: "-13s", "--glyph-opacity": "0.2" }}>{">"}</span>
+        </div>
+
         <Reveal>
-          <div className="border-animated p-[1.5px] rounded-[2rem] shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)]">
+          <div
+            ref={ctaRef}
+            onMouseMove={handleCtaTilt}
+            onMouseLeave={handleCtaTiltLeave}
+            className="border-animated p-[1.5px] rounded-[2rem] shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)] will-change-transform"
+          >
             <div className="glass-panel rounded-[calc(2rem-1.5px)] overflow-hidden relative p-10 sm:p-16 text-center space-y-6">
+              {/* glare overlay */}
+              <div ref={ctaGlareRef} className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300" style={{ background: "radial-gradient(600px circle at var(--glare-x, 50%) var(--glare-y, 50%), rgba(255,255,255,0.08), transparent 55%)" }}></div>
+
+              {/* aurora blobs */}
               <div className="absolute -top-12 -left-12 w-56 h-56 bg-primary/25 rounded-full blur-3xl pointer-events-none animate-aurora"></div>
               <div className="absolute -bottom-12 -right-12 w-56 h-56 bg-secondary/25 rounded-full blur-3xl pointer-events-none animate-aurora" style={{ animationDelay: "-8s" }}></div>
+
+              {/* sweeping scan beam */}
+              <div className="cta-scan pointer-events-none absolute inset-0"></div>
+
+              {/* floating chips around the panel */}
+              <div className="absolute -top-5 -left-4 sm:-left-10 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y">
+                <span className="text-xs font-mono text-cyan-400">{"</>"}</span>
+                <span className="text-xs font-mono text-white/70 ml-1">pair with you</span>
+              </div>
+              <div className="absolute -bottom-5 -right-4 sm:-right-10 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-2.5s" }}>
+                <span className="text-xs font-mono text-emerald-400">{"() =>"}</span>
+                <span className="text-xs text-white/60 ml-1">ship()</span>
+              </div>
 
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-black uppercase tracking-wider">
                 <span className="relative flex h-2 w-2">
@@ -871,16 +1022,28 @@ const Landing = () => {
                 Free forever for developers
               </div>
 
-              <h3 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
+              <h3 className="relative text-3xl sm:text-5xl font-black text-white tracking-tight">
                 Ready to Find Your{" "}
                 <span className="bg-gradient-to-r from-rose-400 via-pink-400 to-purple-400 bg-clip-text text-transparent animate-gradient">
                   Next Coding Partner?
                 </span>
               </h3>
-              <p className="text-sm sm:text-base text-base-content/75 max-w-xl mx-auto leading-relaxed">
+              <p className="relative text-sm sm:text-base text-base-content/75 max-w-xl mx-auto leading-relaxed">
                 Join thousands of developers matching, pair programming, and shipping projects together on DevTinder.
               </p>
-              <div className="pt-2">
+
+              <div className="relative inline-flex items-center gap-2 text-xs font-bold text-base-content/60">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                </span>
+                <span className="text-emerald-300 font-black font-mono text-sm">
+                  {Math.round(onlineDevs).toLocaleString()}
+                </span>
+                developers online right now
+              </div>
+
+              <div className="relative pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
                   to="/login"
                   className="btn btn-primary btn-shine bg-gradient-to-r from-primary to-secondary border-none text-white px-10 rounded-2xl h-14 font-black text-sm shadow-xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-2"
@@ -890,7 +1053,20 @@ const Landing = () => {
                     <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                 </Link>
+                <Link
+                  to="/login"
+                  className="group inline-flex items-center gap-2 px-6 h-14 rounded-2xl text-sm font-bold text-white/80 border border-white/15 bg-white/5 hover:bg-white/10 hover:text-white hover:border-white/30 transition-all"
+                >
+                  Explore the feed
+                  <svg className="w-4 h-4 fill-current transition-transform duration-300 group-hover:translate-y-0.5" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </Link>
               </div>
+
+              <p className="relative text-[11px] text-base-content/50 font-semibold">
+                No credit card required · Set up in 2 minutes · Cancel anytime
+              </p>
             </div>
           </div>
         </Reveal>

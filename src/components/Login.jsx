@@ -84,7 +84,7 @@ const Stat = ({ end, suffix = "", decimals = 0, label }) => {
         {value.toFixed(decimals)}
         {suffix}
       </p>
-      <p className="text-[10px] uppercase tracking-widest text-white/50 mt-0.5">{label}</p>
+      <p className="text-[10px] uppercase tracking-widest text-white/70 mt-0.5">{label}</p>
     </div>
   );
 };
@@ -101,7 +101,7 @@ const BrandMark = ({ size = "w-12 h-12" }) => (
 
 const InputShell = ({ icon, children, extraClass = "" }) => (
   <label
-    className={`input input-bordered bg-base-900/60 border-white/10 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 focus-within:shadow-[0_0_0_4px_rgba(255,45,85,0.12),0_0_24px_-4px_rgba(255,45,85,0.4)] transition-all duration-300 flex items-center gap-2 rounded-xl ${extraClass}`}
+    className={`input input-bordered bg-base-900/95 border-white/20 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 focus-within:shadow-[0_0_0_4px_rgba(255,45,85,0.12),0_0_24px_-4px_rgba(255,45,85,0.4)] transition-all duration-300 flex items-center gap-2 rounded-xl ${extraClass}`}
   >
     {icon}
     {children}
@@ -234,7 +234,7 @@ const Login = () => {
           onMouseLeave={handleTiltLeave}
           className="border-animated p-[1.5px] rounded-[2rem] shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)] transition-transform duration-150 ease-out will-change-transform"
         >
-          <div className="glass-panel rounded-[calc(2rem-1.5px)] overflow-hidden relative grid lg:grid-cols-[1.05fr_1fr]">
+          <div className="glass-panel auth-panel-solid rounded-[calc(2rem-1.5px)] overflow-hidden relative grid lg:grid-cols-[1.05fr_1fr]">
             <div ref={glareRef} className="glare-overlay"></div>
 
             {/* ------- Welcome Panel (desktop) ------- */}
@@ -253,7 +253,7 @@ const Login = () => {
                   </div>
                   <div>
                     <p className="text-xs font-black text-white">It's a match!</p>
-                    <p className="text-[10px] text-white/60">Full-stack ✕ Frontend</p>
+                    <p className="text-[10px] text-white/75">Full-stack ✕ Frontend</p>
                   </div>
                 </div>
               </div>
@@ -263,7 +263,7 @@ const Login = () => {
                 <BrandMark />
                 <div>
                   <span className="text-2xl font-black tracking-tight text-white">DevTinder</span>
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">Next-gen dev matching</p>
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-white/55">Next-gen dev matching</p>
                 </div>
               </div>
 
@@ -287,7 +287,7 @@ const Login = () => {
                 </h1>
 
                 <div className="flex items-center text-sm font-bold text-white/85 min-h-[1.5rem] animate-slide-up" style={{ animationDelay: "0.2s" }}>
-                  <span className="text-white/50 mr-2">›</span>
+                  <span className="text-white/70 mr-2">›</span>
                   <span>{typed}</span>
                   <span className="typewriter-cursor"></span>
                 </div>
@@ -306,7 +306,7 @@ const Login = () => {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-white">{f.title}</p>
-                        <p className="text-xs text-white/60">{f.desc}</p>
+                        <p className="text-xs text-white/75">{f.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -324,7 +324,7 @@ const Login = () => {
                   <p className="text-xs text-white/85 italic leading-relaxed">
                     "Matched with my next co-founder in 48 hours. Best community for builders."
                   </p>
-                  <p className="text-[11px] text-white/60 font-bold mt-2">— Priya, Backend Engineer</p>
+                  <p className="text-[11px] text-white/75 font-bold mt-2">— Priya, Backend Engineer</p>
                 </div>
               </div>
             </aside>
@@ -339,7 +339,7 @@ const Login = () => {
                 <h2 className="text-2xl font-black tracking-tight text-white">
                   {isLoginForm ? "Welcome Back" : "Join DevTinder"}
                 </h2>
-                <p className="text-xs text-base-content/60 mt-1 flex items-center justify-center gap-1">
+                <p className="text-xs text-base-content/75 mt-1 flex items-center justify-center gap-1">
                   <span className="text-white/40">›</span>
                   <span>{typed}</span>
                   <span className="typewriter-cursor"></span>
@@ -358,7 +358,7 @@ const Login = () => {
                 <h2 className="text-3xl font-black tracking-tight text-white">
                   {isLoginForm ? "Welcome Back" : "Join DevTinder"}
                 </h2>
-                <p className="text-xs text-base-content/60 mt-1">
+                <p className="text-xs text-base-content/75 mt-1">
                   {isLoginForm
                     ? "Your matches are waiting — jump back in"
                     : "Create your developer profile & showcase your stack"}
@@ -374,7 +374,7 @@ const Login = () => {
                 ></span>
                 <button
                   className={`relative flex-1 py-2 rounded-xl text-xs font-black transition-colors z-10 ${
-                    isLoginForm ? "text-white" : "text-base-content/60 hover:text-white"
+                    isLoginForm ? "text-white" : "text-base-content/75 hover:text-white"
                   }`}
                   onClick={() => {
                     setError("");
@@ -385,7 +385,7 @@ const Login = () => {
                 </button>
                 <button
                   className={`relative flex-1 py-2 rounded-xl text-xs font-black transition-colors z-10 ${
-                    !isLoginForm ? "text-white" : "text-base-content/60 hover:text-white"
+                    !isLoginForm ? "text-white" : "text-base-content/75 hover:text-white"
                   }`}
                   onClick={() => {
                     setError("");
@@ -401,14 +401,14 @@ const Login = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="form-control">
                       <label className="label py-1">
-                        <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">First Name</span>
+                        <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/85">First Name</span>
                       </label>
                       <InputShell
-                        icon={<svg className="w-4 h-4 text-base-content/40 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
+                        icon={<svg className="w-4 h-4 text-base-content/55 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
                       >
                         <input
                           type="text"
-                          className="grow text-xs text-white placeholder-base-content/30 focus:outline-none"
+                          className="grow text-sm text-white placeholder-base-content/50 focus:outline-none"
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -420,14 +420,14 @@ const Login = () => {
 
                     <div className="form-control">
                       <label className="label py-1">
-                        <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">Last Name</span>
+                        <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/85">Last Name</span>
                       </label>
                       <InputShell
-                        icon={<svg className="w-4 h-4 text-base-content/40 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
+                        icon={<svg className="w-4 h-4 text-base-content/55 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
                       >
                         <input
                           type="text"
-                          className="grow text-xs text-white placeholder-base-content/30 focus:outline-none"
+                          className="grow text-sm text-white placeholder-base-content/50 focus:outline-none"
                           value={lastName}
                           onChange={(e) => setLastName(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -441,14 +441,14 @@ const Login = () => {
 
                 <div className="form-control">
                   <label className="label py-1">
-                    <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">Developer Email</span>
+                    <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/85">Developer Email</span>
                   </label>
                   <InputShell
-                    icon={<svg className="w-4 h-4 text-base-content/40 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
+                    icon={<svg className="w-4 h-4 text-base-content/55 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
                   >
                     <input
                       type="email"
-                      className="grow text-xs text-white placeholder-base-content/30 focus:outline-none"
+                      className="grow text-sm text-white placeholder-base-content/50 focus:outline-none"
                       value={emailId}
                       onChange={(e) => setEmailId(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -460,15 +460,15 @@ const Login = () => {
 
                 <div className="form-control">
                   <label className="label py-1">
-                    <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">Password</span>
+                    <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/85">Password</span>
                   </label>
                   <InputShell
                     extraClass="pr-2"
-                    icon={<svg className="w-4 h-4 text-base-content/40 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>}
+                    icon={<svg className="w-4 h-4 text-base-content/55 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>}
                   >
                     <input
                       type={showPassword ? "text" : "password"}
-                      className="grow text-xs text-white placeholder-base-content/30 focus:outline-none bg-transparent"
+                      className="grow text-sm text-white placeholder-base-content/50 focus:outline-none bg-transparent"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -478,7 +478,7 @@ const Login = () => {
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="p-1 rounded-lg text-base-content/40 hover:text-white hover:bg-white/10 transition-all duration-200 focus:outline-none"
+                      className="p-1 rounded-lg text-base-content/55 hover:text-white hover:bg-white/10 transition-all duration-200 focus:outline-none"
                       tabIndex={-1}
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
@@ -542,7 +542,7 @@ const Login = () => {
                     "Create Developer Profile"
                   )}
                 </button>
-                <p className="text-[10px] text-base-content/40 text-center mt-4 flex items-center justify-center gap-1.5">
+                <p className="text-[10px] text-base-content/55 text-center mt-4 flex items-center justify-center gap-1.5">
                   <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
