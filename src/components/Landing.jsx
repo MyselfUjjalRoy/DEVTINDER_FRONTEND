@@ -668,9 +668,9 @@ const Landing = () => {
             {[...TECHS, ...TECHS].map((t, i) => (
               <span
                 key={`${t.name}-${i}`}
-                className={`glass-card shrink-0 px-5 py-2.5 rounded-xl border border-white/10 text-sm font-bold ${t.color} whitespace-nowrap`}
+                className="tech-pill shrink-0 px-5 py-2.5 rounded-xl text-sm sm:text-base font-black whitespace-nowrap transition-transform duration-300 hover:scale-110"
               >
-                {t.name}
+                <span className={t.color}>{t.name}</span>
               </span>
             ))}
           </div>
@@ -695,15 +695,30 @@ const Landing = () => {
               <div className="hidden md:block absolute top-1/2 left-[4%] right-[4%] border-t-2 border-dashed border-white/10"></div>
               <div className="hidden md:block absolute top-1/2 left-[4%] right-[4%] h-px bg-gradient-to-r from-rose-500/40 via-purple-500/40 to-cyan-400/40 animate-pulse-glow"></div>
 
+              {/* traveling signal dots */}
+              <div className="hidden md:block absolute top-1/2 left-[4%] right-[4%] pointer-events-none" aria-hidden="true">
+                <span className="constellation-dot" style={{ left: "8%", animationDuration: "9s", animationDelay: "-1s" }}></span>
+                <span className="constellation-dot" style={{ left: "8%", animationDuration: "9s", animationDelay: "-3.5s" }}></span>
+                <span className="constellation-dot constellation-dot--b" style={{ left: "8%", animationDuration: "9s", animationDelay: "-6s" }}></span>
+                <span className="constellation-dot constellation-dot--b" style={{ left: "8%", animationDuration: "11s", animationDelay: "-8s" }}></span>
+              </div>
+
               <div className="relative flex flex-wrap md:flex-nowrap items-center justify-center gap-4 md:gap-5">
                 {TICKER_WORDS.map((w, i) => (
                   <div key={w} className={`relative ${i % 2 === 0 ? "md:-translate-y-3" : "md:translate-y-4"}`}>
                     <div className="word-bob" style={{ animationDelay: `${-i * 0.9}s` }}>
-                      <span className={`word-chip glass-card rounded-2xl px-5 sm:px-6 py-3 sm:py-3.5 border border-white/15 shadow-xl ${
-                        i % 2 === 0 ? "word-chip--a" : "word-chip--b"
-                      }`}>
-                        {w}
-                      </span>
+                      <div className="group relative">
+                        {/* breathing glow */}
+                        <div className="absolute -inset-3 rounded-2xl bg-gradient-to-r from-rose-500/25 via-purple-500/20 to-cyan-400/25 blur-xl opacity-50 animate-pulse-glow pointer-events-none"></div>
+                        {/* gradient border */}
+                        <div className="relative rounded-2xl p-[1.5px] bg-white/10 transition-all duration-500 group-hover:bg-[linear-gradient(120deg,#fb7185,#f472b6,#c084fc,#67e8f9,#fb7185)] group-hover:bg-[length:300%_300%] group-hover:animate-gradient">
+                          <span className={`word-chip block rounded-[calc(1rem-1.5px)] px-5 sm:px-6 py-3 sm:py-3.5 transition-transform duration-300 group-hover:scale-[1.08] ${
+                            i % 2 === 0 ? "word-chip--a" : "word-chip--b"
+                          }`}>
+                            {w}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
