@@ -20,6 +20,23 @@ const NavBar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
+  const [upsellDismissed, setUpsellDismissed] = useState(() => {
+    try {
+      return localStorage.getItem("devtinder-upsell-dismissed") === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const dismissUpsell = () => {
+    setUpsellDismissed(true);
+    try {
+      localStorage.setItem("devtinder-upsell-dismissed", "1");
+    } catch {
+      /* storage unavailable — banner just stays */
+    }
+  };
+
   const closeMenu = () => setMenuOpen(false);
 
   useEffect(() => {
@@ -270,45 +287,12 @@ const NavBar = () => {
                         </svg>
                       }
                     />
-                  </div>
-
-                  {/* Navigate section — only on mobile, navbar covers it on desktop */}
-                  <div className="px-2 pb-2 space-y-0.5 md:hidden">
-                    <p className="px-3 pt-1.5 pb-1 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
-                      Navigate
-                    </p>
-                    <ProfileMenuItem
-                      to="/connections"
-                      onClick={closeMenu}
-                      active={isActive("/connections")}
-                      tint="bg-rose-500/10 text-rose-300"
-                      label="My Connections"
-                      count={connections?.length ?? 0}
-                      icon={
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                      }
-                    />
-                    <ProfileMenuItem
-                      to="/requests"
-                      onClick={closeMenu}
-                      active={isActive("/requests")}
-                      tint="bg-violet-500/10 text-violet-300"
-                      label="Requests"
-                      count={requests?.length ?? 0}
-                      icon={
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                      }
-                    />
                     <ProfileMenuItem
                       to="/premium"
                       onClick={closeMenu}
                       active={isActive("/premium")}
                       tint="bg-amber-500/10 text-amber-300"
-                      label={user?.isPremium ? "Premium" : "Go Pro"}
+                      label={user?.isPremium ? "Premium Plan" : "Go Pro"}
                       icon={
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
@@ -350,6 +334,34 @@ const NavBar = () => {
           </div>
         )}
       </div>
+
+      {/* Premium upsell strip — shown to free users until dismissed */}
+      {user && !user.isPremium && !upsellDismissed && location.pathname !== "/premium" && (
+        <div className="bg-gradient-to-r from-amber-500/[0.14] via-yellow-500/[0.08] to-amber-500/[0.14] border-b border-amber-500/20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-center gap-3">
+            <span className="hidden sm:inline-block text-amber-400 text-sm">👑</span>
+            <p className="text-[11px] sm:text-xs font-bold text-amber-200/90 text-center">
+              Unlock Gold — direct developer chat, verified badge & top feed placement.
+            </p>
+            <Link
+              to="/premium"
+              className="shrink-0 inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-lg shadow-md shadow-amber-500/30 hover:scale-105 transition-transform"
+            >
+              Go Pro
+            </Link>
+            <button
+              type="button"
+              onClick={dismissUpsell}
+              aria-label="Dismiss premium upsell"
+              className="shrink-0 text-amber-300/60 hover:text-amber-200 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
