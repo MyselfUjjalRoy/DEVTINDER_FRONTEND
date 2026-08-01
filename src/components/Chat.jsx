@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { createSocketConnection } from "../utils/socket";
 import { useSelector } from "react-redux";
 import axios from "axios";
-import { BASE_URL } from "../utils/constants";
+import { BASE_URL, resolveMediaUrl } from "../utils/constants";
+import MediaImage from "./MediaImage";
 
 const TickIcon = ({ status }) => {
   if (status === "sent") {
@@ -698,12 +699,6 @@ const Chat = () => {
     ? `${partner.firstName} ${partner.lastName || ""}`
     : "Developer Match";
 
-  const attachmentUrl = (url) => {
-    if (!url) return "";
-    if (url.startsWith("http")) return url;
-    return BASE_URL.replace(/\/+$/, "") + url;
-  };
-
   return (
     <div className="max-w-4xl mx-auto px-4 my-6">
       <div className="glass-card border border-white/10 h-[80vh] flex flex-col rounded-3xl overflow-hidden shadow-2xl backdrop-blur-2xl">
@@ -712,8 +707,8 @@ const Chat = () => {
             <div className="avatar shrink-0">
               <div className="w-11 h-11 rounded-2xl ring-2 ring-primary/40 overflow-hidden bg-base-900">
                 {partner?.photoURL ? (
-                  <img
-                    src={attachmentUrl(partner.photoURL)}
+                  <MediaImage
+                    src={partner.photoURL}
                     alt={partnerName}
                     className="object-cover w-full h-full select-none"
                   />
@@ -926,14 +921,14 @@ const Chat = () => {
                       {msg.attachment && (
                         <div className={msg.text ? "mt-2" : ""}>
                           {msg.attachment.type === "image" ? (
-                            <img
-                              src={attachmentUrl(msg.attachment.url)}
+                            <MediaImage
+                              src={msg.attachment.url}
                               alt={msg.attachment.name}
                               className="max-w-[200px] max-h-[200px] rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
                               onClick={() => setPreviewAttachment(msg.attachment)}
                             />
                           ) : msg.attachment.type === "audio" ? (
-                            <VoiceMessage url={attachmentUrl(msg.attachment.url)} isSelf={isSelf} />
+                            <VoiceMessage url={resolveMediaUrl(msg.attachment.url)} isSelf={isSelf} />
                           ) : (
                             <button
                               onClick={() => setPreviewAttachment(msg.attachment)}
@@ -1171,8 +1166,8 @@ const Chat = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setPreviewAttachment(null)}>
             <div className="relative max-w-3xl max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
               {previewAttachment.type === "image" ? (
-                <img
-                  src={attachmentUrl(previewAttachment.url)}
+                <MediaImage
+                  src={previewAttachment.url}
                   alt={previewAttachment.name}
                   className="w-full h-auto max-h-[80vh] object-contain rounded-2xl shadow-2xl"
                 />
@@ -1184,7 +1179,7 @@ const Chat = () => {
                     </svg>
                   </div>
                   <p className="text-white font-bold text-lg text-center break-all max-w-md">Voice message</p>
-                  <audio controls autoPlay src={attachmentUrl(previewAttachment.url)} className="w-[320px]" />
+                  <audio controls autoPlay src={resolveMediaUrl(previewAttachment.url)} className="w-[320px]" />
                 </div>
               ) : (
                 <div className="bg-base-900 border border-white/10 rounded-2xl shadow-2xl p-12 flex flex-col items-center gap-6">
@@ -1200,7 +1195,7 @@ const Chat = () => {
                 </div>
               )}
               <button
-                onClick={() => downloadFile(attachmentUrl(previewAttachment.url), previewAttachment.name)}
+                onClick={() => downloadFile(resolveMediaUrl(previewAttachment.url), previewAttachment.name)}
                 className="absolute top-4 right-14 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all shadow-lg"
                 title="Download"
               >

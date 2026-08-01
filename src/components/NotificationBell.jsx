@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { BASE_URL, resolveMediaUrl } from "../utils/constants";
+import { BASE_URL } from "../utils/constants";
+import MediaImage from "./MediaImage";
 import {
   addNotifications,
   markAllRead,
@@ -227,8 +228,8 @@ const NotificationBell = () => {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         {actor.photoURL && (
-                          <img
-                            src={resolveMediaUrl(actor.photoURL)}
+                          <MediaImage
+                            src={actor.photoURL}
                             alt={actorName}
                             className="w-5 h-5 rounded-full object-cover shrink-0"
                           />

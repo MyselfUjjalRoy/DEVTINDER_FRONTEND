@@ -2,11 +2,8 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import confetti from "canvas-confetti";
-import { resolveMediaUrl } from "../utils/constants";
 import { MembershipBadge } from "../utils/membershipUtils";
-
-const DEFAULT_PHOTO =
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=500&q=80";
+import MediaImage from "./MediaImage";
 
 const FLOAT_HEARTS = [
   { left: "6%", delay: "0s", duration: "6s", size: 18, opacity: 0.8 },
@@ -110,7 +107,6 @@ const fireConfetti = () => {
 const MatchProfileCard = ({ user, entrance, rotation, delay, fallbackName }) => {
   if (!user) return null;
   const name = user.firstName || fallbackName || "User";
-  const photo = resolveMediaUrl(user.photoURL) || DEFAULT_PHOTO;
   const headline = getHeadline(user);
   const skills = getSkills(user);
 
@@ -124,8 +120,8 @@ const MatchProfileCard = ({ user, entrance, rotation, delay, fallbackName }) => 
         style={{ "--card-rot": `${rotation}deg` }}
       >
         <div className="relative w-36 h-48 sm:w-44 sm:h-60 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border border-white/15 bg-base-900">
-          <img
-            src={photo}
+          <MediaImage
+            src={user.photoURL}
             alt={name}
             className="absolute inset-0 w-full h-full object-cover select-none"
             draggable={false}

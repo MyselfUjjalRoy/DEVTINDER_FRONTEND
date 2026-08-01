@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { BASE_URL, resolveMediaUrl } from "../utils/constants";
+import { BASE_URL } from "../utils/constants";
+import MediaImage from "./MediaImage";
 import { markNotificationRead } from "../utils/notificationSlice";
 
 const getToastMeta = (type) => {
@@ -70,8 +71,8 @@ const NotificationToast = () => {
       <div className="flex items-start gap-3">
         {actor.photoURL ? (
           <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 ring-2 ring-white/20">
-            <img
-              src={resolveMediaUrl(actor.photoURL)}
+            <MediaImage
+              src={actor.photoURL}
               alt={actorName || "notification"}
               className="object-cover w-full h-full"
             />

@@ -1,5 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
-import { BASE_URL, resolveMediaUrl } from "../utils/constants";
+import { BASE_URL } from "../utils/constants";
+import MediaImage from "./MediaImage";
 import { addRequests, removeRequest } from "../utils/requestsSlice";
 import { useEffect } from "react";
 import axios from "axios";
@@ -120,11 +121,8 @@ const Requests = () => {
               <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
                 <div className="avatar shrink-0">
                   <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ring-2 ring-primary/30 overflow-hidden bg-base-900">
-                    <img
-                      src={
-                        resolveMediaUrl(photoURL) ||
-                        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
-                      }
+                    <MediaImage
+                      src={photoURL}
                       alt={firstName}
                       className="object-cover w-full h-full select-none"
                     />

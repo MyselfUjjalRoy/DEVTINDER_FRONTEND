@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { addUser } from "../utils/userSlice";
 import { BASE_URL, resolveMediaUrl } from "../utils/constants";
+import MediaImage from "./MediaImage";
 import UserCard from "./UserCard";
 import { MembershipBadge } from "../utils/membershipUtils";
 
@@ -337,8 +338,8 @@ const EditProfile = ({ user }) => {
                   </button>
                   {photoURL && (
                     <div className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 bg-base-800 border border-white/10">
-                      <img
-                        src={resolveMediaUrl(photoURL)}
+                      <MediaImage
+                        src={photoURL}
                         alt="Avatar preview"
                         className="w-full h-full object-cover"
                       />
@@ -454,8 +455,8 @@ const EditProfile = ({ user }) => {
                   >
                     {url ? (
                       <>
-                        <img
-                          src={resolveMediaUrl(url)}
+                        <MediaImage
+                          src={url}
                           alt={`Personal photo ${idx + 1}`}
                           className="w-full h-full object-cover"
                         />

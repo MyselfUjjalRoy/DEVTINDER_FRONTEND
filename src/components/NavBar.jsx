@@ -1,19 +1,48 @@
+import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { BASE_URL, resolveMediaUrl } from "../utils/constants";
+import { BASE_URL } from "../utils/constants";
 import axios from "axios";
 import { removeUser } from "../utils/userSlice";
 import { useTheme } from "../utils/useTheme";
 import { MembershipBadge, getAvatarRingStyle } from "../utils/membershipUtils";
 import NotificationBell from "./NotificationBell";
+import MediaImage from "./MediaImage";
 
 const NavBar = () => {
   const user = useSelector((store) => store.user);
   const requests = useSelector((store) => store.requests);
+  const connections = useSelector((store) => store.connections);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  const closeMenu = () => setMenuOpen(false);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
 
   const handleLogout = async () => {
     try {
@@ -144,80 +173,170 @@ const NavBar = () => {
             </div>
 
             {/* Profile Dropdown */}
-            <div className="dropdown dropdown-end">
-              <div 
-                tabIndex={0} 
-                role="button" 
-                className={`btn btn-ghost btn-circle avatar transition-all duration-300 shadow-lg ${getAvatarRingStyle(user)}`}
+            <div className="relative flex-none" ref={menuRef}>
+              <button
+                type="button"
+                onClick={() => setMenuOpen((prev) => !prev)}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                className={`btn btn-ghost btn-circle avatar transition-all duration-300 shadow-lg ${getAvatarRingStyle(user)} ${menuOpen ? "ring-2 ring-white/30 scale-105" : ""}`}
               >
                 <div className="w-10 rounded-full overflow-hidden bg-base-800">
-                  <img 
-                    alt={user.firstName} 
-                    src={resolveMediaUrl(user.photoURL) || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=500&q=80"} 
-                    className="object-cover w-full h-full" 
+                  <MediaImage
+                    alt={user.firstName}
+                    src={user.photoURL}
+                    className="object-cover w-full h-full"
                   />
                 </div>
-              </div>
-              <ul
-                tabIndex={0}
-                className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-2xl bg-base-900/95 border border-white/10 backdrop-blur-xl rounded-2xl w-64 space-y-1"
-              >
-                <li className="px-3 py-2.5 border-b border-white/10 mb-1">
-                  <div className="flex flex-col items-start gap-1">
-                    <div className="flex items-center justify-between w-full">
-                      <p className="text-xs font-bold text-white leading-none">{user.firstName} {user.lastName}</p>
-                      <MembershipBadge membershipType={user.membershipType} isPremium={user.isPremium} size="sm" />
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-0 mt-3 w-64 rounded-2xl bg-[#0b0c14]/95 border border-white/15 backdrop-blur-xl shadow-[0_24px_70px_-20px_rgba(0,0,0,0.95)] z-[60] origin-top-right animate-slide-up overflow-hidden">
+                  {/* Brand accent bar */}
+                  <div className="h-1 w-full bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500" />
+                  {/* Soft inner glow */}
+                  <div className="pointer-events-none absolute -top-14 -right-10 w-40 h-40 rounded-full bg-rose-500/[0.07] blur-3xl" />
+
+                  {/* Signed-in header (no avatar — it's in the navbar) */}
+                  <div className="px-4 pt-3.5 pb-3 border-b border-white/[0.08]">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                      Signed in as
+                    </p>
+                    <div className="flex items-center justify-between gap-2 mt-1.5">
+                      <p className="text-sm font-black text-white leading-tight truncate">
+                        {user.firstName} {user.lastName}
+                      </p>
+                      <MembershipBadge
+                        membershipType={user.membershipType}
+                        isPremium={user.isPremium}
+                        size="sm"
+                      />
                     </div>
-                    <p className="text-[10px] text-base-content/50 truncate mt-1">{user.emailId || "Developer Account"}</p>
+                    <div className="flex items-center justify-between gap-2 mt-1">
+                      <p className="text-[11px] text-slate-400 truncate">
+                        {user.emailId || "Developer Account"}
+                      </p>
+                      <span className="shrink-0 flex items-center gap-1 text-[9px] font-bold text-emerald-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Online
+                      </span>
+                    </div>
                   </div>
-                </li>
-                <li>
-                  <Link to="/profile" className="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-white/5 transition-colors">
-                    <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span className="font-semibold text-xs text-white">Edit Profile & Stack</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/connections" className="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-white/5 transition-colors md:hidden">
-                    <svg className="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <span className="font-semibold text-xs text-white">My Connections</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/requests" className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-white/5 transition-colors md:hidden">
-                    <div className="flex items-center gap-3">
-                      <svg className="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                      </svg>
-                      <span className="font-semibold text-xs text-white">Connection Requests</span>
-                    </div>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/premium" className="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-white/5 transition-colors">
-                    <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                    </svg>
-                    <span className="font-semibold text-xs text-amber-400">DevTinder Premium</span>
-                  </Link>
-                </li>
-                <div className="divider my-1 opacity-20"></div>
-                <li>
-                  <button 
-                    onClick={handleLogout} 
-                    className="flex w-full items-center gap-3 py-2 px-3 rounded-xl text-error hover:bg-error/10 transition-colors text-left"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    <span className="font-bold text-xs">Logout</span>
-                  </button>
-                </li>
-              </ul>
+
+                  {/* Quick stats */}
+                  <div className="flex items-center px-2 py-2.5 border-b border-white/[0.08]">
+                    <StatButton
+                      value={connections?.length ?? 0}
+                      label="Matches"
+                      onClick={() => {
+                        closeMenu();
+                        navigate("/connections");
+                      }}
+                    />
+                    <div className="w-px h-6 bg-white/10 shrink-0" />
+                    <StatButton
+                      value={requests?.length ?? 0}
+                      label="Requests"
+                      onClick={() => {
+                        closeMenu();
+                        navigate("/requests");
+                      }}
+                    />
+                    <div className="w-px h-6 bg-white/10 shrink-0" />
+                    <StatButton
+                      value={user?.skills?.length ?? 0}
+                      label="Skills"
+                      onClick={() => {
+                        closeMenu();
+                        navigate("/profile");
+                      }}
+                    />
+                  </div>
+
+                  {/* Account section */}
+                  <div className="p-2 space-y-0.5">
+                    <p className="px-3 pt-1 pb-1 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                      Account
+                    </p>
+                    <ProfileMenuItem
+                      to="/profile"
+                      onClick={closeMenu}
+                      active={isActive("/profile")}
+                      tint="bg-indigo-500/10 text-indigo-300"
+                      label="Edit Profile & Stack"
+                      icon={
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      }
+                    />
+                  </div>
+
+                  {/* Navigate section — only on mobile, navbar covers it on desktop */}
+                  <div className="px-2 pb-2 space-y-0.5 md:hidden">
+                    <p className="px-3 pt-1.5 pb-1 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                      Navigate
+                    </p>
+                    <ProfileMenuItem
+                      to="/connections"
+                      onClick={closeMenu}
+                      active={isActive("/connections")}
+                      tint="bg-rose-500/10 text-rose-300"
+                      label="My Connections"
+                      count={connections?.length ?? 0}
+                      icon={
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      }
+                    />
+                    <ProfileMenuItem
+                      to="/requests"
+                      onClick={closeMenu}
+                      active={isActive("/requests")}
+                      tint="bg-violet-500/10 text-violet-300"
+                      label="Requests"
+                      count={requests?.length ?? 0}
+                      icon={
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                      }
+                    />
+                    <ProfileMenuItem
+                      to="/premium"
+                      onClick={closeMenu}
+                      active={isActive("/premium")}
+                      tint="bg-amber-500/10 text-amber-300"
+                      label={user?.isPremium ? "Premium" : "Go Pro"}
+                      icon={
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                        </svg>
+                      }
+                    />
+                  </div>
+
+                  <div className="mx-3 h-px bg-white/[0.08]" />
+
+                  {/* Logout */}
+                  <div className="p-2">
+                    <ProfileMenuItem
+                      onClick={() => {
+                        closeMenu();
+                        handleLogout();
+                      }}
+                      tint="bg-rose-500/10 text-rose-400"
+                      label="Log Out"
+                      icon={
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                      }
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -232,6 +351,64 @@ const NavBar = () => {
         )}
       </div>
     </div>
+  );
+};
+
+const StatButton = ({ value, label, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="flex-1 flex flex-col items-center gap-0.5 py-1 group"
+  >
+    <span className="text-sm font-black text-white leading-none group-hover:scale-110 transition-transform">
+      {value}
+    </span>
+    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 group-hover:text-slate-400 transition-colors">
+      {label}
+    </span>
+  </button>
+);
+
+const ProfileMenuItem = ({ to, onClick, active, icon, label, count, tint }) => {
+  const content = (
+    <>
+      <span
+        className={`flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-transform duration-200 group-hover:scale-110 ${tint}`}
+      >
+        {icon}
+      </span>
+      <span className="flex-1 text-xs font-bold text-slate-100 truncate">{label}</span>
+      {typeof count === "number" && count > 0 && (
+        <span className="badge badge-sm bg-rose-500/15 text-rose-300 border border-rose-500/30 px-1.5 text-[10px] font-black">
+          {count}
+        </span>
+      )}
+      <svg
+        className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all duration-200 shrink-0"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+      </svg>
+    </>
+  );
+
+  const baseCls = `group flex items-center gap-3 w-full px-3 py-2 rounded-xl transition-all duration-200 ${
+    active ? "bg-white/[0.06]" : "hover:bg-white/[0.06] hover:translate-x-0.5"
+  }`;
+
+  if (to) {
+    return (
+      <Link to={to} onClick={onClick} className={baseCls}>
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={baseCls + " text-left"}>
+      {content}
+    </button>
   );
 };
 
