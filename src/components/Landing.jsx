@@ -134,6 +134,55 @@ const FEATURES = [
   },
 ];
 
+const MOCK_SKILL_STYLES = {
+  "React 19": { bg: "bg-cyan-500/15", text: "text-cyan-500", border: "border-cyan-500/30", dot: "bg-cyan-400" },
+  TypeScript: { bg: "bg-sky-500/15", text: "text-sky-500", border: "border-sky-500/30", dot: "bg-sky-400" },
+  "Node.js": { bg: "bg-emerald-500/15", text: "text-emerald-500", border: "border-emerald-500/30", dot: "bg-emerald-400" },
+  GraphQL: { bg: "bg-pink-500/15", text: "text-pink-500", border: "border-pink-500/30", dot: "bg-pink-400" },
+  AWS: { bg: "bg-purple-500/15", text: "text-purple-500", border: "border-purple-500/30", dot: "bg-purple-400" },
+};
+
+const MOCK_SKILLS = Object.keys(MOCK_SKILL_STYLES);
+
+const MOCK_LINKS = [
+  {
+    label: "GitHub",
+    color: "#24292E",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="white" className="w-3.5 h-3.5">
+        <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+      </svg>
+    ),
+  },
+  {
+    label: "LinkedIn",
+    color: "#0A66C2",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="white" className="w-3.5 h-3.5">
+        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Portfolio",
+    color: "#0ea5e9",
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 010 5.656l-2.828 2.828a4 4 0 01-5.657-5.657l1.414-1.414m9.657 1.414l-1.414 1.414a4 4 0 01-5.657 5.657" />
+      </svg>
+    ),
+  },
+  {
+    label: "LeetCode",
+    color: "#FFA116",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="white" className="w-3.5 h-3.5">
+        <path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 2.104 5.35 5.35 0 0 0-.125.513 5.527 5.527 0 0 0 .062 2.362 5.83 5.83 0 0 0 .349 1.017 5.938 5.938 0 0 0 1.271 1.818l4.277 4.193.039.038c2.248 2.165 5.852 2.133 8.063-.074l2.396-2.392c.54-.54.54-1.414.003-1.955a1.378 1.378 0 0 0-1.951-.003l-2.396 2.392a3.021 3.021 0 0 1-4.205.038l-.02-.019-4.276-4.193c-.652-.64-.972-1.469-.948-2.263a2.68 2.68 0 0 1 .066-.523 2.545 2.545 0 0 1 .619-1.164L9.13 8.114c1.058-1.134 3.204-1.27 4.43-.278l3.501 2.831c.593.48 1.461.387 1.94-.207a1.384 1.384 0 0 0-.207-1.943l-3.5-2.831c-.8-.647-1.766-1.045-2.774-1.202l2.015-2.158A1.384 1.384 0 0 0 13.483 0zm-2.866 12.815a1.38 1.38 0 0 0-1.38 1.382 1.38 1.38 0 0 0 1.38 1.382H20.79a1.38 1.38 0 0 0 1.38-1.382 1.38 1.38 0 0 0-1.38-1.382z" />
+      </svg>
+    ),
+  },
+];
+
 const CountStat = ({ end, suffix = "", decimals = 0, label, gradient }) => {
   const value = useCountUp(end);
   return (
@@ -256,7 +305,7 @@ const Landing = () => {
           </a>
         </div>
 
-        {/* Live Interactive Deck Card Mockup */}
+        {/* Live Interactive Deck Card Mockup — mirrors the real feed card */}
         <div className="relative w-full max-w-md mx-auto mt-16">
           {/* ambient glow */}
           <div className="absolute inset-x-8 inset-y-4 bg-gradient-to-tr from-primary/40 via-secondary/30 to-accent/40 rounded-3xl blur-2xl pointer-events-none animate-pulse-glow"></div>
@@ -290,83 +339,166 @@ const Landing = () => {
               <div className="glass-card text-left rounded-[1.75rem] shadow-2xl overflow-hidden border border-white/15 relative">
                 <div ref={glareRef} className="glare-overlay" style={{ borderRadius: "0" }}></div>
 
-                {/* photo */}
-                <figure className="relative h-72 w-full overflow-hidden bg-base-900">
+                <figure className="relative h-[22rem] w-full overflow-hidden bg-base-900">
                   <img
-                    src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=500&q=80"
+                    src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80"
                     alt="Sarah Jenkins Developer"
                     className="h-full w-full object-cover select-none"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-base-950 via-base-950/30 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none"></div>
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-transparent pointer-events-none"></div>
 
-                  {/* tinder-style progress dots */}
-                  <div className="absolute top-4 left-4 right-4 flex gap-1.5">
-                    <span className="h-1 flex-1 rounded-full bg-white/25 overflow-hidden">
-                      <span className="block h-full w-full bg-white/90 rounded-full"></span>
-                    </span>
-                    <span className="h-1 flex-1 rounded-full bg-white/25 overflow-hidden">
-                      <span className="block h-full w-1/2 bg-white/90 rounded-full"></span>
-                    </span>
-                    <span className="h-1 flex-1 rounded-full bg-white/25"></span>
-                  </div>
-
-                  {/* gold verified */}
-                  <div className="absolute top-8 right-4 w-8 h-8 rounded-full bg-base-950/60 backdrop-blur-md border border-amber-400/40 flex items-center justify-center" title="Gold Verified">
-                    <svg className="w-4 h-4 text-amber-400 fill-current" viewBox="0 0 24 24">
-                      <path d="M12 1l2.9 2.4 3.7-.7.7 3.7L21.7 9l-1.9 3.2 1.9 3.2-2.4 2.6-.7 3.7-3.7-.7L12 23l-2.9-2.4-3.7.7-.7-3.7L2.3 15.4 4.2 12 2.3 8.8l2.4-2.6.7-3.7 3.7.7L12 1z" />
-                    </svg>
+                  {/* top badges */}
+                  <div className="absolute top-4 left-4 right-4 flex items-start justify-between pointer-events-none">
+                    <div className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md text-[10px] font-black uppercase tracking-wider text-white px-3 py-1.5 rounded-full border border-white/10">
+                        <span className="w-2 h-2 rounded-full bg-accent animate-pulse flex-shrink-0"></span>
+                        Available
+                      </span>
+                      <span className="w-8 h-8 rounded-full bg-base-950/70 backdrop-blur-md border border-amber-400/40 flex items-center justify-center" title="Gold Verified">
+                        <svg className="w-4 h-4 text-amber-400 fill-current" viewBox="0 0 24 24">
+                          <path d="M12 1l2.9 2.4 3.7-.7.7 3.7L21.7 9l-1.9 3.2 1.9 3.2-2.4 2.6-.7 3.7-3.7-.7L12 23l-2.9-2.4-3.7.7-.7-3.7L2.3 15.4 4.2 12 2.3 8.8l2.4-2.6.7-3.7 3.7.7L12 1z" />
+                        </svg>
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <span className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md text-white text-xs font-black px-3 py-1.5 rounded-full border border-white/10">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9zm9 7a3 3 0 100-6 3 3 0 000 6z" />
+                        </svg>
+                        2/4
+                      </span>
+                      <span className="bg-black/50 backdrop-blur-md text-white text-xs font-black px-3 py-1.5 rounded-full border border-white/10">26</span>
+                    </div>
                   </div>
 
                   {/* profile info */}
-                  <div className="absolute bottom-3 left-5 right-5">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-2xl font-black text-white drop-shadow-md">Sarah, 26</h3>
-                      <span className="badge bg-base-950/70 backdrop-blur-md text-emerald-300 border border-emerald-400/30 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 flex items-center gap-1">
-                        <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Online
-                      </span>
+                  <div className="absolute bottom-4 left-5 right-5 pointer-events-none">
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <h3 className="text-[1.75rem] font-black text-white leading-tight tracking-tight drop-shadow-lg">
+                          Sarah <span className="font-light">Jenkins</span>
+                        </h3>
+                        <p className="text-xs font-bold text-white/70 uppercase tracking-[0.15em] mt-0.5 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                          Female
+                        </p>
+                        <p className="text-[11px] font-bold text-primary mt-1 flex items-center gap-1.5">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          Full Stack Engineer @ Stripe
+                        </p>
+                        <p className="text-[11px] font-semibold text-white/60 mt-0.5 flex items-center gap-1.5">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+                          </svg>
+                          MIT · 2022
+                        </p>
+                        <p className="text-[11px] font-semibold text-white/60 mt-0.5 flex items-center gap-1.5">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          Bengaluru, India
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-center bg-black/50 backdrop-blur-md rounded-2xl px-3 py-2 border border-white/10">
+                        <span className="text-[10px] text-white/60 font-bold uppercase tracking-widest leading-none">Match</span>
+                        <span className="text-lg font-black text-primary leading-none mt-0.5">92%</span>
+                      </div>
                     </div>
-                    <p className="text-[11px] font-bold text-secondary uppercase tracking-widest mt-0.5">Full Stack Wizard</p>
-                    <p className="text-[11px] text-white/60 mt-0.5 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      Bengaluru, India
-                    </p>
                   </div>
                 </figure>
 
-                <div className="p-5 space-y-4">
-                  {/* compatibility meter */}
-                  <div>
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
-                      <span className="text-base-content/40">Stack Compatibility</span>
-                      <span className="bg-[linear-gradient(90deg,#fb7185,#c084fc,#67e8f9)] bg-clip-text text-transparent">92%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-white/10 mt-1.5 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[linear-gradient(90deg,#fb7185,#f472b6,#c084fc,#67e8f9)] animate-grow-bar shadow-[0_0_12px_rgba(244,114,182,0.6)]"
-                        style={{ "--bar-w": "92%" }}
-                      ></div>
+                <div className="px-5 pt-4 pb-5 space-y-4">
+                  <p className="text-sm text-base-content/80 line-clamp-2 leading-relaxed tracking-[-0.01em]">
+                    Full-stack engineer specializing in TypeScript and Node.js. I love clean architecture, contributing to open source, and pairing up on ambitious side projects that actually ship.
+                  </p>
+
+                  {/* tech stack */}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-base-content/40 flex items-center gap-1.5">
+                      <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                      </svg>
+                      Tech Stack
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {MOCK_SKILLS.map((skill) => {
+                        const s = MOCK_SKILL_STYLES[skill];
+                        return (
+                          <span
+                            key={skill}
+                            className={`inline-flex items-center gap-1 ${s.bg} ${s.text} border ${s.border} text-[11px] font-bold px-2.5 py-1 rounded-lg`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${s.dot} flex-shrink-0`}></span>
+                            {skill}
+                          </span>
+                        );
+                      })}
+                      <span className="inline-flex items-center text-[11px] font-bold px-2.5 py-1 rounded-lg bg-base-300/60 text-base-content/50 border border-base-300">
+                        +4
+                      </span>
                     </div>
                   </div>
 
-                  {/* skills */}
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className="badge badge-sm bg-cyan-500/10 text-cyan-400 border-cyan-500/20 font-bold">React 19</span>
-                    <span className="badge badge-sm bg-sky-500/10 text-sky-400 border-sky-500/20 font-bold">TypeScript</span>
-                    <span className="badge badge-sm bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold">Node.js</span>
-                    <span className="badge badge-sm bg-purple-500/10 text-purple-400 border-purple-500/20 font-bold">GraphQL</span>
+                  {/* profile links */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {MOCK_LINKS.map((link) => (
+                      <a
+                        key={link.label}
+                        href="#"
+                        onClick={(e) => e.preventDefault()}
+                        title={link.label}
+                        aria-label={link.label}
+                        className="w-8 h-8 rounded-lg text-white flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-transform"
+                        style={{ backgroundColor: link.color }}
+                      >
+                        {link.icon}
+                      </a>
+                    ))}
+                    <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-base-800 border border-white/10 text-white text-[10px] font-black uppercase tracking-wider">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Resume
+                    </span>
                   </div>
 
-                  {/* action bar */}
-                  <div className="flex items-center justify-center gap-8 pt-1 border-t border-white/5">
-                    <button className="w-12 h-12 rounded-full bg-base-900 border border-white/10 text-rose-500 text-xl font-black shadow-lg flex items-center justify-center hover:scale-110 hover:border-rose-500/40 hover:shadow-rose-500/20 active:scale-90 transition-all">
-                      ✕
+                  <div className="border-t border-base-300/60"></div>
+
+                  {/* actions */}
+                  <div className="flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      className="flex-1 flex items-center justify-center gap-2 h-12 px-4 py-3 rounded-2xl border-2 border-base-300 text-base-content/60 font-black text-xs uppercase tracking-wider hover:border-error/60 hover:bg-error/8 hover:text-error active:scale-95 transition-all duration-200"
+                    >
+                      <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </div>
+                      Pass
                     </button>
-                    <button className="w-16 h-16 rounded-full bg-gradient-to-tr from-rose-500 via-pink-500 to-purple-500 text-white text-2xl shadow-xl shadow-rose-500/30 flex items-center justify-center hover:scale-110 active:scale-90 transition-all animate-heartbeat">
-                      ♥
+                    <button
+                      type="button"
+                      className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/30 hover:scale-110 hover:shadow-amber-500/50 active:scale-95 transition-all duration-200 border-2 border-amber-300/50 flex-shrink-0"
+                    >
+                      <svg className="w-5 h-5 fill-current animate-heartbeat" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex-1 flex items-center justify-center gap-2 h-12 px-4 py-3 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.03] active:scale-95 transition-all duration-200 border-none"
+                    >
+                      Connect
+                      <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
+                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                        </svg>
+                      </div>
                     </button>
                   </div>
                 </div>

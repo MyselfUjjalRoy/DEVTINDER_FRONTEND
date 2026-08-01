@@ -1,25 +1,42 @@
 import { Link } from "react-router-dom";
 
-const PRODUCT_LINKS = [
-  { label: "Explore Deck", to: "/feed", icon: "M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" },
-  { label: "Matches", to: "/connections", icon: "M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" },
-  { label: "Requests", to: "/requests", icon: "M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" },
-  { label: "Pro Pass", to: "/premium", icon: "M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z", gold: true },
-];
-
-const RESOURCE_LINKS = [
-  { label: "How it Works", to: "/#how" },
-  { label: "Features", to: "/#features" },
-  { label: "Sign In", to: "/login" },
-  { label: "Register", to: "/login" },
-];
-
-const STACK = [
-  { name: "React 19", color: "text-cyan-400", border: "border-cyan-500/25", bg: "bg-cyan-500/10" },
-  { name: "Redux Toolkit", color: "text-purple-400", border: "border-purple-500/25", bg: "bg-purple-500/10" },
-  { name: "Node & Express", color: "text-emerald-400", border: "border-emerald-500/25", bg: "bg-emerald-500/10" },
-  { name: "Socket.IO", color: "text-rose-400", border: "border-rose-500/25", bg: "bg-rose-500/10" },
-  { name: "MongoDB", color: "text-amber-400", border: "border-amber-500/25", bg: "bg-amber-500/10" },
+const SOCIAL_LINKS = [
+  {
+    label: "GitHub",
+    color: "#24292E",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
+        <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+      </svg>
+    ),
+  },
+  {
+    label: "LinkedIn",
+    color: "#0A66C2",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
+        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+      </svg>
+    ),
+  },
+  {
+    label: "X (Twitter)",
+    color: "#111827",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+    ),
+  },
+  {
+    label: "YouTube",
+    color: "#FF0000",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
+        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+      </svg>
+    ),
+  },
 ];
 
 const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
@@ -33,12 +50,11 @@ const Footer = () => {
       {/* Background decoration */}
       <div className="absolute -top-24 -left-24 w-80 h-80 bg-rose-500/10 rounded-full blur-[120px] pointer-events-none animate-aurora"></div>
       <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-purple-600/10 rounded-full blur-[130px] pointer-events-none animate-aurora" style={{ animationDelay: "-8s" }}></div>
-      <div className="absolute inset-0 bg-mesh-pattern opacity-30 pointer-events-none"></div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-10">
           {/* Brand */}
-          <div className="flex flex-col items-start gap-4">
+          <div className="flex flex-col items-start gap-4 max-w-md">
             <Link to="/" className="flex items-center gap-2.5 group">
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 via-pink-500 to-purple-600 p-0.5 shadow-lg shadow-rose-500/25 group-hover:scale-105 group-hover:shadow-rose-500/40 transition-all duration-300">
                 <div className="w-full h-full bg-[#0b0c14] rounded-[0.85rem] flex items-center justify-center">
@@ -63,68 +79,33 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Product */}
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-base-content/40 mb-4">Product</p>
-            <ul className="space-y-2.5">
-              {PRODUCT_LINKS.map((l) => (
-                <li key={l.label}>
-                  <Link
-                    to={l.to}
-                    className="group flex items-center gap-2.5 text-sm text-base-content/60 hover:text-white transition-colors"
-                  >
-                    <span className={`flex items-center justify-center w-6 h-6 rounded-lg ${l.gold ? "bg-amber-500/10 text-amber-400" : "bg-white/5 text-slate-400"} group-hover:scale-110 group-hover:text-rose-400 transition-all`}>
-                      <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
-                        <path d={l.icon} />
-                      </svg>
-                    </span>
-                    <span className="group-hover:translate-x-0.5 transition-transform">{l.label}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Resources */}
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-base-content/40 mb-4">Resources</p>
-            <ul className="space-y-2.5">
-              {RESOURCE_LINKS.map((l) => (
-                <li key={l.label}>
-                  <Link
-                    to={l.to}
-                    className="group flex items-center gap-2.5 text-sm text-base-content/60 hover:text-white transition-colors"
-                  >
-                    <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-white/5 text-slate-400 group-hover:scale-110 group-hover:text-purple-400 transition-all">
-                      <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
-                        <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
-                        <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
-                      </svg>
-                    </span>
-                    <span className="group-hover:translate-x-0.5 transition-transform">{l.label}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Built with */}
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-base-content/40 mb-4">Built with</p>
-            <div className="flex flex-wrap gap-2">
-              {STACK.map((s) => (
-                <span
-                  key={s.name}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${s.border} ${s.bg} ${s.color} hover:scale-105 transition-transform cursor-default`}
+          {/* Social */}
+          <div className="flex flex-col items-start lg:items-end gap-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-base-content/40">Follow us</p>
+            <div className="flex items-center gap-2.5">
+              {SOCIAL_LINKS.map((s) => (
+                <a
+                  key={s.label}
+                  href="#"
+                  onClick={(e) => e.preventDefault()}
+                  title={s.label}
+                  aria-label={s.label}
+                  className="group/soc w-10 h-10 rounded-xl flex items-center justify-center border border-white/10 bg-white/5 hover:scale-110 hover:-translate-y-0.5 active:scale-95 transition-all"
+                  style={{ backgroundColor: s.color, borderColor: `${s.color}66` }}
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70"></span>
-                  {s.name}
-                </span>
+                  {s.icon}
+                </a>
               ))}
             </div>
-            <p className="text-[11px] text-base-content/40 mt-4 leading-relaxed">
-              Crafted for developers who want to match, pair and ship — together.
-            </p>
+            <a
+              href="mailto:hello@devtinder.app"
+              className="inline-flex items-center gap-2 text-xs font-semibold text-base-content/50 hover:text-white transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              hello@devtinder.app
+            </a>
           </div>
         </div>
 
