@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { addUser } from "../utils/userSlice";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../utils/constants";
 import confetti from "canvas-confetti";
-import LoginBackground from "./LoginBackground";
+import ConstellationBackground from "./ConstellationBackground";
+import { useCountUp, useTypewriter } from "../utils/hooks";
 
 const TAGLINES = [
   "Find your co-founder",
@@ -73,58 +74,6 @@ const computeStrength = (pw) => {
   if (/\d/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
   return Math.min(score, 4);
-};
-
-const useTypewriter = (phrases, typeSpeed = 55, deleteSpeed = 28, pause = 1700) => {
-  const [text, setText] = useState("");
-  const [idx, setIdx] = useState(0);
-  const [deleting, setDeleting] = useState(false);
-
-  useEffect(() => {
-    const current = phrases[idx % phrases.length];
-    let timer;
-
-    if (!deleting && text === current) {
-      timer = setTimeout(() => setDeleting(true), pause);
-    } else if (deleting && text === "") {
-      setDeleting(false);
-      setIdx((i) => (i + 1) % phrases.length);
-    } else {
-      timer = setTimeout(
-        () => {
-          setText(
-            deleting
-              ? current.slice(0, text.length - 1)
-              : current.slice(0, text.length + 1)
-          );
-        },
-        deleting ? deleteSpeed : typeSpeed
-      );
-    }
-
-    return () => clearTimeout(timer);
-  }, [text, deleting, idx, phrases, typeSpeed, deleteSpeed, pause]);
-
-  return text;
-};
-
-const useCountUp = (end, duration = 1800) => {
-  const [value, setValue] = useState(0);
-
-  useEffect(() => {
-    let raf;
-    const start = performance.now();
-    const tick = (now) => {
-      const p = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setValue(end * eased);
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [end, duration]);
-
-  return value;
 };
 
 const Stat = ({ end, suffix = "", decimals = 0, label }) => {
@@ -268,7 +217,7 @@ const Login = () => {
 
   return (
     <div className="relative min-h-[82vh] flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8 overflow-hidden">
-      <LoginBackground />
+      <ConstellationBackground />
 
       {/* Aurora blobs */}
       <div className="absolute top-10 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[130px] pointer-events-none animate-aurora"></div>
@@ -276,17 +225,17 @@ const Login = () => {
       <div className="absolute top-1/3 right-0 w-72 h-72 bg-secondary/15 rounded-full blur-[110px] pointer-events-none animate-aurora" style={{ animationDelay: "-10s" }}></div>
 
       {/* Futuristic grid floor */}
-      <div className="auth-grid-floor hidden lg:block"></div>
+      <div className="grid-floor hidden lg:block"></div>
 
       <div className="w-full max-w-6xl relative z-10">
         <div
           ref={tiltRef}
           onMouseMove={handleTiltMove}
           onMouseLeave={handleTiltLeave}
-          className="auth-border-animated p-[1.5px] rounded-[2rem] shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)] transition-transform duration-150 ease-out will-change-transform"
+          className="border-animated p-[1.5px] rounded-[2rem] shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)] transition-transform duration-150 ease-out will-change-transform"
         >
-          <div className="auth-glass-panel rounded-[calc(2rem-1.5px)] overflow-hidden relative grid lg:grid-cols-[1.05fr_1fr]">
-            <div ref={glareRef} className="auth-glare"></div>
+          <div className="glass-panel rounded-[calc(2rem-1.5px)] overflow-hidden relative grid lg:grid-cols-[1.05fr_1fr]">
+            <div ref={glareRef} className="glare-overlay"></div>
 
             {/* ------- Welcome Panel (desktop) ------- */}
             <aside className="hidden lg:flex relative flex-col justify-between p-12 bg-gradient-to-br from-primary/20 via-primary/5 to-accent/10 overflow-hidden">
