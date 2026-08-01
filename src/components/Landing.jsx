@@ -42,6 +42,76 @@ const GLYPHS = [
 
 const TICKER_WORDS = ["MATCH", "CODE", "BUILD", "PAIR", "SHIP", "GROW", "CONNECT"];
 
+const PLANS = [
+  {
+    key: "Free",
+    name: "Free Dev Pass",
+    tagline: "Kickstart your developer matchmaking journey at zero cost.",
+    price: "₹0",
+    period: "Forever",
+    cta: "Get Started Free",
+    popular: false,
+    gradient: "from-slate-500 to-slate-700",
+    glow: "shadow-slate-500/20",
+    features: [
+      "Browse the developer feed",
+      "10 connection requests / day",
+      "Standard feed placement",
+      "Basic profile visibility",
+    ],
+    icon: (
+      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    ),
+  },
+  {
+    key: "Silver",
+    name: "Silver Dev Pass",
+    tagline: "For developers ready to take their networking further.",
+    price: "₹300",
+    period: "3 Months",
+    cta: "Upgrade to Silver",
+    popular: false,
+    gradient: "from-slate-300 via-slate-200 to-slate-400",
+    glow: "shadow-slate-300/20",
+    features: [
+      "Direct socket chat with matches",
+      "100 connection requests / day",
+      "Silver verified badge",
+      "Boosted feed placement",
+    ],
+    icon: (
+      <svg className="w-5 h-5 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    ),
+  },
+  {
+    key: "Gold",
+    name: "Gold Pro Pass",
+    tagline: "Everything in Silver, maxed out for serious matchmaking.",
+    price: "₹700",
+    period: "6 Months",
+    cta: "Upgrade to Gold",
+    popular: true,
+    gradient: "from-amber-400 via-yellow-300 to-orange-400",
+    glow: "shadow-amber-500/30",
+    features: [
+      "Unlimited direct messages",
+      "Unlimited connection requests",
+      "Gold verified badge",
+      "Top feed deck placement",
+      "Priority profile views & insights",
+    ],
+    icon: (
+      <svg className="w-5 h-5 text-slate-950" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 1l2.9 2.4 3.7-.7.7 3.7L21.7 9l-1.9 3.2 1.9 3.2-2.4 2.6-.7 3.7-3.7-.7L12 23l-2.9-2.4-3.7.7-.7-3.7L2.3 15.4 4.2 12 2.3 8.8l2.4-2.6.7-3.7 3.7.7L12 1z" />
+      </svg>
+    ),
+  },
+];
+
 const STATS = [
   { end: 10, suffix: "K+", decimals: 0, label: "Active Developers", gradient: "from-rose-400 to-pink-400" },
   { end: 45, suffix: "K+", decimals: 0, label: "Successful Matches", gradient: "from-purple-400 to-indigo-400" },
@@ -397,25 +467,18 @@ const Landing = () => {
             <span className="text-xs text-white/60 ml-1">build()</span>
           </div>
 
-          {/* rotating badge */}
-          <div className="absolute -top-8 -right-4 sm:-right-8 z-10 hidden sm:block">
-            <div className="relative w-28 h-28">
-              <div className="absolute inset-0 animate-spin-slow">
-                <svg viewBox="0 0 100 100" className="w-full h-full">
-                  <defs>
-                    <path id="pair-circle" d="M50,50 m-36,0 a36,36 0 1,1 72,0 a36,36 0 1,1 -72,0" />
-                  </defs>
-                  <text fill="rgba(255,255,255,0.75)" fontSize="10" fontWeight="700" letterSpacing="2.5">
-                    <textPath href="#pair-circle">OPEN TO PAIR PROGRAMMING • DEVTINDER •</textPath>
-                  </text>
+          {/* floating like notification — hovers above the card, never hides it */}
+          <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-20 hidden sm:block">
+            <div className="glass-card rounded-xl pl-2.5 pr-3.5 py-2.5 border border-white/10 shadow-2xl flex items-center gap-2.5 animate-float-y">
+              <span className="relative flex w-8 h-8 rounded-full bg-gradient-to-tr from-rose-500 via-pink-500 to-purple-500 items-center justify-center text-white shadow-md shadow-rose-500/30">
+                <span className="absolute inset-0 rounded-full animate-ping bg-rose-500/40"></span>
+                <svg className="w-4 h-4 fill-current relative" viewBox="0 0 24 24">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                 </svg>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-rose-500 via-pink-500 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-rose-500/40 border border-white/20 animate-heartbeat">
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
+              </span>
+              <div>
+                <p className="text-[10px] font-black text-white leading-tight">Sarah liked your profile</p>
+                <p className="text-[9px] text-white/50 font-semibold mt-0.5">2m ago · Match request</p>
               </div>
             </div>
           </div>
@@ -619,7 +682,7 @@ const Landing = () => {
         <div className="ticker-mask">
           <div className="ticker-track">
             {[...TICKER_WORDS, ...TICKER_WORDS].map((w, i) => (
-              <span key={i} className={`ticker-word ${i % 2 === 0 ? "ticker-word--fill" : ""}`}>
+              <span key={i} className={`ticker-word ${i % 2 === 0 ? "" : "ticker-word--alt"}`}>
                 {w}
               </span>
             ))}
@@ -704,6 +767,87 @@ const Landing = () => {
                   </div>
                   <h4 className="text-xl font-black text-white">{f.title}</h4>
                   <p className="text-sm text-base-content/70 leading-relaxed">{f.desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════ PRICING ════════════ */}
+      <section id="pricing" className="relative border-t border-white/5 bg-base-900/40 py-24 scroll-mt-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Reveal className="text-center mb-16">
+            <h2 className="text-xs uppercase font-extrabold tracking-widest text-primary">Pricing</h2>
+            <h3 className="text-3xl sm:text-5xl font-black text-white tracking-tight mt-2">
+              Pick your{" "}
+              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient">
+                dev pass
+              </span>
+            </h3>
+            <p className="text-sm sm:text-base text-base-content/65 max-w-xl mx-auto mt-4">
+              Start free forever. Upgrade only when you're ready for direct chat and priority visibility.
+            </p>
+          </Reveal>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+            {PLANS.map((p, i) => (
+              <Reveal key={p.key} delay={i * 120} className="h-full">
+                <div className={`relative h-full rounded-3xl p-[1.5px] ${p.popular ? "border-animated shadow-[0_30px_90px_-30px_rgba(245,158,11,0.35)]" : "bg-white/10"}`}>
+                  <div className={`sweep-card glass-card rounded-[calc(1.5rem-1.5px)] h-full p-8 flex flex-col transition-all duration-300 ${p.popular ? "hover:-translate-y-2" : "hover:-translate-y-1.5"} hover:shadow-2xl`}>
+                    {p.popular && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-lg shadow-amber-500/30">
+                        <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        Most Popular
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-3">
+                      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${p.gradient} ${p.glow} shadow-lg flex items-center justify-center`}>
+                        {p.icon}
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-black text-white leading-tight">{p.name}</h4>
+                        <p className="text-[10px] text-base-content/50 font-bold uppercase tracking-wider mt-0.5">{p.period}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex items-end gap-1.5">
+                      <span className={`text-4xl font-black leading-none ${p.popular ? "text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400" : "text-white"}`}>
+                        {p.price}
+                      </span>
+                      <span className="text-xs text-base-content/50 font-bold pb-0.5">/ {p.period}</span>
+                    </div>
+                    <p className="text-xs text-base-content/65 leading-relaxed mt-3">{p.tagline}</p>
+
+                    <div className="border-t border-white/5 my-5"></div>
+
+                    <ul className="space-y-2.5 flex-1">
+                      {p.features.map((f) => (
+                        <li key={f} className="flex items-start gap-2 text-sm text-base-content/80">
+                          <span className="mt-0.5 w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </span>
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Link
+                      to="/login"
+                      className={`mt-8 btn w-full rounded-2xl font-black text-xs uppercase tracking-wider h-12 transition-all ${
+                        p.popular
+                          ? "btn-primary btn-shine bg-gradient-to-r from-amber-400 to-orange-500 border-none text-slate-950 shadow-lg shadow-amber-500/30 hover:scale-105"
+                          : "bg-white/5 border border-white/15 text-white hover:bg-white/10 hover:border-white/30 hover:scale-[1.02]"
+                      }`}
+                    >
+                      {p.cta}
+                    </Link>
+                  </div>
                 </div>
               </Reveal>
             ))}

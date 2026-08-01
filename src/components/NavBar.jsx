@@ -353,6 +353,12 @@ const NavBar = () => {
                 >
                   Features
                 </a>
+                <a
+                  href="#pricing"
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  Pricing
+                </a>
                 <Link
                   to="/login"
                   title="Sign in to unlock Pro Pass"

@@ -612,7 +612,7 @@ html {
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .hero-glyph, .ticker-track, .animate-spin-slow { animation: none !important; }
+  .hero-glyph, .ticker-track { animation: none !important; }
 }
 
 @keyframes riseGlyph {
@@ -653,22 +653,23 @@ html {
   mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
 }
 .ticker-word {
-  padding: 0 2.5rem;
-  font-size: clamp(2.5rem, 6vw, 5rem);
+  padding: 0 2rem;
+  font-size: clamp(2.5rem, 6vw, 4.75rem);
   font-weight: 900;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   white-space: nowrap;
-  line-height: 1.15;
+  line-height: 1.2;
   color: transparent;
-  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.14);
-}
-.ticker-word--fill {
-  background: linear-gradient(90deg, #ff2d55, #f472b6, #bf5af2, #22d3ee);
-  background-clip: text;
+  background: linear-gradient(90deg, #fda4af, #f472b6, #c084fc, #a78bfa);
   -webkit-background-clip: text;
-  -webkit-text-stroke: 0;
+  background-clip: text;
   background-size: 220% 220%;
   animation: gradientShift 6s ease infinite;
+  filter: drop-shadow(0 4px 20px rgba(244, 114, 182, 0.28));
+}
+.ticker-word--alt {
+  background: linear-gradient(90deg, #a5f3fc, #38bdf8, #60a5fa, #a78bfa);
+  filter: drop-shadow(0 4px 20px rgba(56, 189, 248, 0.28));
 }
 
 @keyframes spinSlow {
