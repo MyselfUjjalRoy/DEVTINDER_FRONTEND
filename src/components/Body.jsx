@@ -1,6 +1,7 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import NavBar from "./NavBar";
 import Footer from "./Footer";
+import MobileNav from "./MobileNav";
 import axios from "axios";
 import { BASE_URL } from "../utils/constants";
 import { useDispatch, useSelector } from "react-redux";
@@ -74,13 +75,14 @@ const Body = () => {
         <div className="absolute -bottom-32 -left-20 w-[28rem] sm:w-[36rem] h-[28rem] sm:h-[36rem] rounded-full bg-gradient-to-tr from-amber-500/10 via-rose-500/10 to-transparent blur-[120px] pointer-events-none" />
         <div className="absolute inset-0 bg-mesh-pattern opacity-20 pointer-events-none" />
       </div>
-      <div className="relative z-10 flex flex-col min-h-screen">
+      <div className="relative z-10 flex flex-col min-h-screen pb-16 md:pb-0">
         <NavBar />
         <div className="flex-1">
           <Outlet />
         </div>
         <Footer />
       </div>
+      <MobileNav />
       <NotificationToast />
       <MatchOverlay
         matchData={userData ? matchData : null}
