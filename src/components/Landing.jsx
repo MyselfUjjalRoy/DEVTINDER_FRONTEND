@@ -450,19 +450,19 @@ const Landing = () => {
           <div className="float-heart text-pink-400 text-sm" style={{ left: "88%", animationDuration: "3.6s", animationDelay: "-1.4s" }}>♥</div>
           <div className="float-heart text-purple-400 text-base" style={{ left: "78%", animationDuration: "4.2s", animationDelay: "-2.2s" }}>♥</div>
 
-          {/* floating code chips — visible on all screens */}
-          <div className="absolute -left-3 sm:-left-10 -top-6 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y">
+          {/* floating code chips — floating OUTSIDE the card */}
+          <div className="absolute -left-4 sm:-left-16 -top-6 sm:-top-10 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y">
             <span className="text-xs font-mono text-cyan-400">{"</>"}</span>
             <span className="text-xs font-mono text-white/70 ml-1">deploy();</span>
           </div>
-          <div className="absolute -right-3 sm:-right-10 bottom-24 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-2.5s" }}>
+          <div className="absolute -right-4 sm:-right-16 top-20 sm:top-28 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-2.5s" }}>
             <span className="text-xs font-mono text-amber-400">git push</span>
             <span className="text-xs text-emerald-400 ml-1">✓ shipped</span>
           </div>
-          <div className="absolute -left-3 sm:-left-8 bottom-8 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-4s" }}>
+          <div className="absolute -left-4 sm:-left-20 bottom-20 sm:bottom-24 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-4s" }}>
             <span className="text-xs font-mono text-purple-400">{"<pair />"}</span>
           </div>
-          <div className="absolute -right-3 sm:-right-6 top-16 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-1.2s" }}>
+          <div className="absolute -right-4 sm:-right-16 -bottom-8 sm:-bottom-10 z-20 glass-card rounded-xl px-3.5 py-2.5 border border-white/10 shadow-2xl animate-float-y" style={{ animationDelay: "-1.2s" }}>
             <span className="text-xs font-mono text-emerald-400">{"() =>"}</span>
             <span className="text-xs text-white/60 ml-1">build()</span>
           </div>
@@ -677,16 +677,45 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ════════════ TICKER ════════════ */}
-      <section className="relative border-y border-white/5 bg-base-900/40 py-8 overflow-hidden" aria-hidden="true">
-        <div className="ticker-mask">
-          <div className="ticker-track">
-            {[...TICKER_WORDS, ...TICKER_WORDS].map((w, i) => (
-              <span key={i} className={`ticker-word ${i % 2 === 0 ? "" : "ticker-word--alt"}`}>
-                {w}
-              </span>
-            ))}
-          </div>
+      {/* ════════════ CODE WORD CONSTELLATION ════════════ */}
+      <section className="relative border-y border-white/5 bg-base-900/40 py-16 overflow-hidden">
+        <div className="absolute -top-20 -left-24 w-72 h-72 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-20 -right-24 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <Reveal>
+            <p className="text-[10px] sm:text-xs uppercase font-extrabold tracking-[0.3em] text-primary mb-10">
+              Find your flow on DevTinder
+            </p>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <div className="relative">
+              {/* constellation path */}
+              <div className="hidden md:block absolute top-1/2 left-[4%] right-[4%] border-t-2 border-dashed border-white/10"></div>
+              <div className="hidden md:block absolute top-1/2 left-[4%] right-[4%] h-px bg-gradient-to-r from-rose-500/40 via-purple-500/40 to-cyan-400/40 animate-pulse-glow"></div>
+
+              <div className="relative flex flex-wrap md:flex-nowrap items-center justify-center gap-4 md:gap-5">
+                {TICKER_WORDS.map((w, i) => (
+                  <div key={w} className={`relative ${i % 2 === 0 ? "md:-translate-y-3" : "md:translate-y-4"}`}>
+                    <div className="word-bob" style={{ animationDelay: `${-i * 0.9}s` }}>
+                      <span className={`word-chip glass-card rounded-2xl px-5 sm:px-6 py-3 sm:py-3.5 border border-white/15 shadow-xl ${
+                        i % 2 === 0 ? "word-chip--a" : "word-chip--b"
+                      }`}>
+                        {w}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+
+          <Reveal delay={220}>
+            <p className="text-sm sm:text-base text-base-content/70 max-w-xl mx-auto mt-10 leading-relaxed">
+              Seven ways the community levels up together — from your first match to your final ship.
+            </p>
+          </Reveal>
         </div>
       </section>
 
