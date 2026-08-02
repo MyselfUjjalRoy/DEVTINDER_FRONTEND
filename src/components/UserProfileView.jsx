@@ -12,12 +12,15 @@ import {
 import { MembershipBadge } from "../utils/membershipUtils";
 import MediaImage from "./MediaImage";
 import ConstellationCanvas from "./ConstellationCanvas";
+import PhotoViewer from "./PhotoViewer";
 
 const GENDER_GLYPH = {
   Male: { symbol: "♂", cls: "border-sky-400/40 bg-sky-500/15 text-sky-300" },
   Female: { symbol: "♀", cls: "border-pink-400/40 bg-pink-500/15 text-pink-300" },
   Others: { symbol: "⚧", cls: "border-violet-400/40 bg-violet-500/15 text-violet-300" },
 };
+
+const PHOTO_ACCENTS = ["#ff2d55", "#22d3ee", "#f472b6", "#fbbf24", "#34d399", "#a78bfa"];
 
 const RELATION_META = {
   self: { label: "This is you", cls: "border-white/15 bg-white/5 text-slate-200" },
@@ -173,6 +176,7 @@ const UserProfileView = () => {
   const [busy, setBusy] = useState(false);
   const [activeSection, setActiveSection] = useState("about");
   const [scrollY, setScrollY] = useState(0);
+  const [viewerIndex, setViewerIndex] = useState(null);
 
   const fetchProfile = useCallback(async () => {
     setLoading(true);
@@ -537,7 +541,11 @@ const UserProfileView = () => {
             <span className="spark text-xs" style={{ bottom: "18%", left: "10%", animationDelay: "-2.2s" }}>✦</span>
             <span className="spark text-[10px]" style={{ bottom: "24%", right: "16%", animationDelay: "-3s" }}>✦</span>
 
-            <div className="avatar-bob relative">
+            <div
+              className="avatar-bob relative cursor-pointer group/av"
+              onClick={() => allPhotos.length > 0 && setViewerIndex(0)}
+              title={allPhotos.length > 1 ? "Click to open photo archive" : "Click to view photo"}
+            >
               <div className="avatar-ring breath-glow rounded-full p-[3px]" style={{ "--bglow": "rgba(255,45,85,0.7)" }}>
                 <MediaImage
                   src={profile.photoURL}
@@ -549,6 +557,14 @@ const UserProfileView = () => {
                 title="Online"
                 className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full bg-emerald-500 border-[3px] border-[#070912] shadow-[0_0_14px_rgba(16,185,129,0.85)]"
               />
+              <span className="absolute inset-0 rounded-full opacity-0 group-hover/av:opacity-100 transition-opacity duration-300 pointer-events-none flex items-center justify-center bg-black/30">
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 border border-white/20 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-sm">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+                  </svg>
+                  View
+                </span>
+              </span>
             </div>
           </div>
 
@@ -879,21 +895,48 @@ const UserProfileView = () => {
       {allPhotos.length > 1 && (
         <section id="media" className="relative max-w-6xl mx-auto px-4 pt-16 scroll-mt-24">
           <Reveal>
-            <SectionHeader index={5} title="Media Reel" subtitle="A slow scrolling film of their moments" />
+            <SectionHeader
+              index={5}
+              title="Media Reel"
+              subtitle="Click any frame to open the archive"
+            />
           </Reveal>
           <Reveal variant="up">
             <div className="film-mask overflow-hidden py-3">
               <div className="animate-film flex gap-4 w-max">
-                {filmPhotos.map((p, i) => (
-                  <div key={`f-${i}`} className="film-cell relative w-64 h-44 sm:w-72 sm:h-52 rounded-2xl overflow-hidden border border-white/10 shrink-0 group-photo">
-                    <MediaImage src={p} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
-                    <div className="absolute bottom-0 inset-x-0 px-3 py-2 flex items-center justify-between">
-                      <p className="text-[10px] font-black text-white/90">{profile.firstName}'s moment</p>
-                      <span className="font-mono text-[8px] tracking-[0.2em] text-white/50">{String(i + 1).padStart(2, "0")}</span>
-                    </div>
-                  </div>
-                ))}
+                {filmPhotos.map((p, i) => {
+                  const realIdx = i % allPhotos.length;
+                  const accent = PHOTO_ACCENTS[realIdx % PHOTO_ACCENTS.length];
+                  return (
+                    <button
+                      key={`f-${i}`}
+                      onClick={() => setViewerIndex(realIdx)}
+                      title="Click to view full photo"
+                      className="film-frame group/frame relative w-64 sm:w-72 shrink-0 block"
+                      style={{ "--frame-c": accent }}
+                    >
+                      <span className="sprocket-holes" />
+                      <span className="film-cell relative w-64 h-44 sm:w-72 sm:h-52 rounded-2xl overflow-hidden border border-white/10 block">
+                        <MediaImage src={p} alt={`Photo ${realIdx + 1}`} className="w-full h-full object-cover" />
+                        <span className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
+                        <span className="film-aura" />
+                        <span className="absolute bottom-0 inset-x-0 px-3 py-2 flex items-center justify-between">
+                          <p className="text-[10px] font-black text-white/90">{profile.firstName}'s moment</p>
+                          <span className="font-mono text-[8px] tracking-[0.2em] text-white/50">{String(realIdx + 1).padStart(2, "0")}</span>
+                        </span>
+                        <span className="film-view absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 group-hover/frame:opacity-100 transition-opacity duration-300 pointer-events-none">
+                          <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-black/55 border border-white/25 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-sm">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+                            </svg>
+                            View
+                          </span>
+                        </span>
+                      </span>
+                      <span className="sprocket-holes" />
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </Reveal>
@@ -981,6 +1024,16 @@ const UserProfileView = () => {
           PROFILE_VIEW_v3 · DEV_SIGNAL_ACTIVE
         </p>
       </div>
+
+      {viewerIndex !== null && allPhotos.length > 0 && (
+        <PhotoViewer
+          photos={allPhotos}
+          index={viewerIndex}
+          setIndex={setViewerIndex}
+          onClose={() => setViewerIndex(null)}
+          firstName={profile.firstName}
+        />
+      )}
     </div>
   );
 };

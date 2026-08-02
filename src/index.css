@@ -1688,6 +1688,126 @@ html {
   box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.8);
 }
 
+/* ——— film sprocket frames + aura glow ——— */
+.sprocket-holes {
+  display: block;
+  height: 10px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.22) 0 8px, transparent 8px 20px);
+  opacity: 0.5;
+}
+.film-aura {
+  position: absolute;
+  inset: -2px;
+  border-radius: 16px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  box-shadow: 0 0 24px -4px var(--frame-c, #ff2d55), inset 0 0 24px -8px var(--frame-c, #ff2d55);
+}
+.group\/frame:hover .film-aura { opacity: 1; }
+.film-cell { cursor: pointer; }
+
+/* ═══════════════ HOLOGRAPHIC PHOTO VIEWER ═══════════════ */
+.holo-backdrop {
+  background: rgba(4, 6, 12, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: holoBackdropIn 0.32s ease-out both;
+}
+@keyframes holoBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+
+.holo-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.5);
+  animation: holoTwinkle 4s ease-in-out infinite;
+}
+@keyframes holoTwinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.9; } }
+
+.holo-grain {
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.holo-pedestal-ring {
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 28px;
+  box-shadow: 0 0 46px -12px var(--ring-c, #ff2d55), inset 0 0 34px -20px var(--ring-c, #ff2d55);
+  animation: holoPedestalPulse 5s ease-in-out infinite;
+}
+@keyframes holoPedestalPulse { 0%, 100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.02); } }
+
+.holo-photo {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: zoom-in;
+}
+.holo-photo-zoomed .holo-photo { transform: scale(1.6); cursor: zoom-out; }
+
+.holo-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -6px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  box-shadow: 0 0 12px 2px rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  animation: holoScanY 3.4s ease-in-out infinite;
+}
+@keyframes holoScanY {
+  0%   { top: -6px; opacity: 0; }
+  6%   { opacity: 0.85; }
+  45%  { opacity: 0.85; }
+  50%  { top: 100%; opacity: 0; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.holo-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.holo-corner {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+  z-index: 5;
+  border-color: rgba(255, 255, 255, 0.7);
+}
+.holo-corner--tl { top: 8px; left: 8px; border-top: 2px solid; border-left: 2px solid; border-top-left-radius: 8px; }
+.holo-corner--tr { top: 8px; right: 8px; border-top: 2px solid; border-right: 2px solid; border-top-right-radius: 8px; }
+.holo-corner--bl { bottom: 8px; left: 8px; border-bottom: 2px solid; border-left: 2px solid; border-bottom-left-radius: 8px; }
+.holo-corner--br { bottom: 8px; right: 8px; border-bottom: 2px solid; border-right: 2px solid; border-bottom-right-radius: 8px; }
+
+.holo-flash { animation: holoFlash 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes holoFlash {
+  0%   { opacity: 0; transform: scale(0.985); }
+  12%  { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+.holo-thumb { filter: grayscale(0.7) brightness(0.8); }
+.holo-thumb:hover { filter: grayscale(0.2) brightness(1); border-color: rgba(255, 255, 255, 0.3); transform: translateY(-2px); }
+.holo-thumb.active {
+  filter: none;
+  border-color: var(--thumb-c, #ff2d55);
+  box-shadow: 0 0 16px -4px var(--thumb-c, #ff2d55);
+  transform: translateY(-2px);
+}
+.holo-thumbrow::-webkit-scrollbar { height: 4px; }
+.holo-thumbrow::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 9999px; }
+
 /* vibe panels — animated shine sweep */
 .vibe-shine { position: relative; overflow: hidden; }
 .vibe-shine::before {
@@ -1722,6 +1842,9 @@ html {
   .reveal { opacity: 1; transform: none; }
   .caret-blink::after, .animate-film, .vibe-shine::before,
   .interest-bubble, .journey-line, .hud-rise, .cover-hero-media { animation: none !important; }
+  .holo-star, .holo-scan, .holo-pedestal-ring, .holo-flash, .holo-backdrop,
+  .sprocket-holes { animation: none !important; }
+  .holo-pedestal-ring { opacity: 0.8; }
   .film-mask:hover .animate-film, .film-cell { transition: none; }
   .film-cell:hover { transform: none; }
 }
