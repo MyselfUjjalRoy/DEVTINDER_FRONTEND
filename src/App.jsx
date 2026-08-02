@@ -10,6 +10,7 @@ import appStore from "./utils/appStore";
 import Premium from "./components/Premium";
 import Chat from "./components/Chat"
 import Landing from "./components/Landing";
+import UserProfileView from "./components/UserProfileView";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/requests" element={<Requests/>}/>
         <Route path="/premium" element={<Premium/>}/>
         <Route path="/chat/:targetUserId" element={<Chat/>}/>
+        <Route path="/user/:userId" element={<UserProfileView/>}/>
 
       </Route>
     </Routes>

@@ -4,7 +4,7 @@ import MediaImage from "./MediaImage";
 import { addRequests, removeRequest } from "../utils/requestsSlice";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const GENDER_GLYPH = {
   Male: { symbol: "♂", color: "text-sky-400" },
@@ -32,6 +32,7 @@ const CountUp = ({ to, duration = 1200 }) => {
 
 const Requests = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const requests = useSelector((store) => store.requests);
   const [leaving, setLeaving] = useState({});
 
@@ -225,6 +226,17 @@ const Requests = () => {
 
               {/* Actions */}
               <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
+                <button
+                  onClick={() => navigate(`/user/${_id}`)}
+                  disabled={Boolean(state)}
+                  className="group/view relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-violet-400/30 bg-violet-500/10 text-violet-300 transition-all duration-300 hover:bg-violet-500/25 hover:scale-110 hover:border-violet-400/60 active:scale-95 shadow-lg shadow-violet-500/15 disabled:opacity-40 disabled:scale-100"
+                  title="View profile"
+                >
+                  <svg className="w-4 h-4 group-hover/view:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
                 <button
                   onClick={() => handleDecision("rejected", request._id)}
                   disabled={Boolean(state)}

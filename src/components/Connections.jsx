@@ -359,7 +359,18 @@ const Connections = () => {
                     </div>
                   </div>
 
-                  <div className="shrink-0 flex sm:justify-end">
+                  <div className="shrink-0 flex gap-2 sm:justify-end">
+                    <Link
+                      to={"/user/" + _id}
+                      title="View profile"
+                      className="group/prof relative flex-1 sm:flex-none overflow-hidden rounded-xl border border-white/15 bg-white/5 text-slate-200 font-black text-[11px] uppercase tracking-wider h-10 px-4 flex items-center justify-center gap-2 hover:bg-white/10 hover:border-white/30 hover:scale-105 hover:text-white transition-all duration-300"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      Profile
+                    </Link>
                     <Link
                       to={"/chat/" + _id}
                       onClick={() => clearUnread(_id)}
