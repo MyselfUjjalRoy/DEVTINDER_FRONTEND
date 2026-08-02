@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { addUser } from "../utils/userSlice";
@@ -123,109 +123,6 @@ const fireWelcome = () => {
   }
 };
 
-const FlowView = ({
-  flowEmail,
-  otp,
-  setOtp,
-  cooldown,
-  resending,
-  successMsg,
-  error,
-  loading,
-  onVerify,
-  onResend,
-  onBack,
-}) => {
-  const keyIcon = (
-    <svg className="w-4 h-4 text-base-content/40 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
-  );
-
-  return (
-    <div className="animate-slide-up">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-base font-black text-white">Verify your email</h3>
-        <button
-          onClick={onBack}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-[10px] font-bold text-base-content/70 hover:bg-white/10 hover:text-white transition-all"
-        >
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back
-        </button>
-      </div>
-
-      {successMsg && (
-        <div className="alert bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 rounded-xl text-xs py-3 px-4 flex items-center gap-2 mb-4">
-          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{successMsg}</span>
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <div className="form-control">
-          <label className="label py-1">
-            <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">
-              6-digit code sent to
-            </span>
-          </label>
-            <p className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(255,45,85,0.8)] animate-pulse" />
-              {flowEmail}
-            </p>
-            <InputShell icon={keyIcon}>
-              <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                className="grow text-center text-lg font-black tracking-[0.6em] text-white placeholder-base-content/30 focus:outline-none"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                onKeyDown={(e) => e.key === "Enter" && onVerify()}
-                placeholder="••••••"
-              />
-            </InputShell>
-            <button
-              onClick={onResend}
-              disabled={cooldown > 0 || resending}
-              className="mt-2 self-start text-[11px] font-bold text-base-content/50 hover:text-primary transition-colors disabled:text-base-content/25 disabled:cursor-not-allowed"
-            >
-              {cooldown > 0
-                ? `Resend code in ${cooldown}s`
-                : resending
-                  ? "Resending..."
-                  : "Resend code"}
-            </button>
-          </div>
-
-        {error && (
-          <div className="alert alert-error bg-error/15 border border-error/30 text-error rounded-xl text-xs py-3 px-4 flex items-center gap-2">
-            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span>{error}</span>
-          </div>
-        )}
-
-        <button
-          className="btn btn-primary btn-shine w-full rounded-2xl h-12 font-black text-xs uppercase tracking-wider bg-gradient-to-r from-primary to-secondary border-none text-white hover:opacity-95 shadow-xl shadow-primary/25 hover:scale-[1.01] active:scale-95 transition-all"
-          onClick={onVerify}
-          disabled={loading || !otp}
-        >
-          {loading ? (
-            <span className="loading loading-spinner loading-xs"></span>
-          ) : (
-            "Verify & Activate"
-          )}
-        </button>
-      </div>
-    </div>
-  );
-};
-
 const Login = () => {
   const [emailId, setEmailId] = useState("");
   const [password, setPassword] = useState("");
@@ -233,13 +130,6 @@ const Login = () => {
   const [lastName, setLastName] = useState("");
   const [isLoginForm, setIsLoginForm] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-
-  const [view, setView] = useState("auth"); // auth | verify
-  const [otp, setOtp] = useState("");
-  const [flowEmail, setFlowEmail] = useState("");
-  const [cooldown, setCooldown] = useState(0);
-  const [resending, setResending] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
 
   const [toast, setToast] = useState(false);
   const [error, setError] = useState("");
@@ -250,12 +140,6 @@ const Login = () => {
 
   const tiltRef = useRef(null);
   const glareRef = useRef(null);
-
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [cooldown]);
 
   const typed = useTypewriter(TAGLINES);
   const strength = isLoginForm ? -1 : computeStrength(password);
@@ -278,17 +162,9 @@ const Login = () => {
         return navigate("/feed");
       }, 1500);
     } catch (err) {
-      const message = String(
-        err?.response?.data || err?.message || "Login failed. Please check your credentials."
+      setError(
+        String(err?.response?.data || err?.message || "Login failed. Please check your credentials.")
       );
-      if (err?.response?.status === 403 && /verify/i.test(message)) {
-        setFlowEmail(emailId);
-        setOtp("");
-        setView("verify");
-        setError("");
-      } else {
-        setError(message);
-      }
     } finally {
       setLoading(false);
     }
@@ -303,31 +179,6 @@ const Login = () => {
         { firstName, lastName, emailId, password },
         { withCredentials: true }
       );
-      setFlowEmail(emailId);
-      setOtp("");
-      setView("verify");
-      setSuccessMsg(
-        res.data?.emailSent
-          ? "We sent a 6-digit code to your email. Enter it below to activate your account."
-          : "Account created! The verification email could not be sent right now — use Resend code below."
-      );
-    } catch (err) {
-      console.log(err);
-      setError(err?.response?.data || "Signup failed. Please check your details.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerify = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      const res = await axios.post(
-        BASE_URL + "verify-email",
-        { emailId: flowEmail, otp },
-        { withCredentials: true }
-      );
       dispatch(addUser(res.data.data));
       setToast(true);
       fireWelcome();
@@ -337,30 +188,9 @@ const Login = () => {
       }, 1500);
     } catch (err) {
       console.log(err);
-      setError(err?.response?.data || "Verification failed. Please check the code.");
+      setError(err?.response?.data || "Signup failed. Please check your details.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleResend = async () => {
-    if (cooldown > 0) return;
-    setResending(true);
-    setError("");
-    try {
-      await axios.post(
-        BASE_URL + "resend-verification",
-        { emailId: flowEmail },
-        { withCredentials: true }
-      );
-      setCooldown(30);
-      setOtp("");
-      setSuccessMsg("A fresh code has been sent. Check your inbox.");
-    } catch (err) {
-      console.log(err);
-      setError(err?.response?.data || "Could not resend the code. Try again shortly.");
-    } finally {
-      setResending(false);
     }
   };
 
@@ -536,8 +366,7 @@ const Login = () => {
                 </p>
               </div>
 
-              {view === "auth" ? (
-                <>
+              <>
               {/* Segmented Switcher */}
               <div className="relative flex bg-base-900/80 p-1 rounded-2xl border border-white/10 mb-8 animate-slide-up" style={{ animationDelay: "0.1s" }}>
                 <span
@@ -724,25 +553,6 @@ const Login = () => {
                 </p>
               </div>
                 </>
-              ) : (
-                <FlowView
-                  flowEmail={flowEmail}
-                  otp={otp}
-                  setOtp={setOtp}
-                  cooldown={cooldown}
-                  resending={resending}
-                  successMsg={successMsg}
-                  error={error}
-                  loading={loading}
-                  onVerify={handleVerify}
-                  onResend={handleResend}
-                  onBack={() => {
-                    setView("auth");
-                    setError("");
-                    setSuccessMsg("");
-                  }}
-                />
-              )}
             </div>
           </div>
         </div>
