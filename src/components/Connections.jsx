@@ -273,8 +273,7 @@ const Connections = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {sortedConnections.map((connection, idx) => {
-            const { _id, firstName, lastName, photoURL, age, gender, skills } = connection;
-            const skillList = Array.isArray(skills) ? skills : [];
+            const { _id, firstName, lastName, photoURL, age, gender } = connection;
             const unread = unreadCounts[_id] || 0;
             const glyph = GENDER_GLYPH[gender];
             const last = lastActivityMap[_id];
@@ -336,28 +335,14 @@ const Connections = () => {
                             ? `${last.lastSenderId === user?._id ? "You: " : ""}${last.lastText || ""}`
                             : "No messages yet"}
                         </span>
-                        {last && (
-                          <span className="ml-auto shrink-0 text-[10px] font-bold text-white/40">
-                            {formatLastActivity(last.lastActivityAt)}
-                          </span>
-                        )}
-                      </div>
-
-                      {skillList.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-1.5">
-                          {skillList.slice(0, 3).map((s, i) => (
-                            <span
-                              key={i}
-                              className="pill-in inline-flex items-center px-2 py-0.5 rounded-lg bg-primary/10 border border-primary/15 text-primary text-[10px] font-bold"
-                              style={{ animationDelay: `${120 + idx * 70 + i * 70}ms` }}
-                            >
-                              {s}
-                            </span>
-                          ))}
-                        </div>
+                      {last && (
+                        <span className="ml-auto shrink-0 text-[10px] font-bold text-white/40">
+                          {formatLastActivity(last.lastActivityAt)}
+                        </span>
                       )}
                     </div>
                   </div>
+                </div>
 
                   <div className="shrink-0 flex gap-2 sm:justify-end">
                     <Link
