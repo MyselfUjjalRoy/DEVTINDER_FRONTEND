@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { addUser } from "../utils/userSlice";
@@ -123,6 +123,212 @@ const fireWelcome = () => {
   }
 };
 
+const FlowView = ({
+  view,
+  flowEmail,
+  otp,
+  setOtp,
+  newPassword,
+  setNewPassword,
+  confirmPassword,
+  setConfirmPassword,
+  emailId,
+  setEmailId,
+  cooldown,
+  resending,
+  successMsg,
+  error,
+  loading,
+  resetStrengthMeta,
+  resetStrength,
+  onVerify,
+  onResend,
+  onForgot,
+  onReset,
+  onBack,
+}) => {
+  const isVerify = view === "verify";
+  const isForgot = view === "forgot";
+  const isReset = view === "reset";
+
+  const mailIcon = (
+    <svg className="w-4 h-4 text-base-content/40 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+  );
+  const keyIcon = (
+    <svg className="w-4 h-4 text-base-content/40 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+  );
+  const lockIcon = (
+    <svg className="w-4 h-4 text-base-content/40 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+  );
+
+  return (
+    <div className="animate-slide-up">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-base font-black text-white">
+          {isVerify ? "Verify your email" : isForgot ? "Reset password" : "Set a new password"}
+        </h3>
+        <button
+          onClick={onBack}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-[10px] font-bold text-base-content/70 hover:bg-white/10 hover:text-white transition-all"
+        >
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+      </div>
+
+      {successMsg && (
+        <div className="alert bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 rounded-xl text-xs py-3 px-4 flex items-center gap-2 mb-4">
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{successMsg}</span>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {isForgot && (
+          <div className="form-control">
+            <label className="label py-1">
+              <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">Account Email</span>
+            </label>
+            <InputShell icon={mailIcon}>
+              <input
+                type="email"
+                className="grow text-xs text-white placeholder-base-content/30 focus:outline-none"
+                value={emailId}
+                onChange={(e) => setEmailId(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && onForgot()}
+                required
+                placeholder="you@example.com"
+              />
+            </InputShell>
+          </div>
+        )}
+
+        {!isForgot && (
+          <div className="form-control">
+            <label className="label py-1">
+              <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">
+                {isVerify ? "6-digit code sent to" : "Code sent to"}
+              </span>
+            </label>
+            <p className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(255,45,85,0.8)] animate-pulse" />
+              {flowEmail}
+            </p>
+            <InputShell icon={keyIcon}>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                className="grow text-center text-lg font-black tracking-[0.6em] text-white placeholder-base-content/30 focus:outline-none"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                onKeyDown={(e) => e.key === "Enter" && (isVerify ? onVerify() : onReset())}
+                placeholder="••••••"
+              />
+            </InputShell>
+            <button
+              onClick={onResend}
+              disabled={cooldown > 0 || resending}
+              className="mt-2 self-start text-[11px] font-bold text-base-content/50 hover:text-primary transition-colors disabled:text-base-content/25 disabled:cursor-not-allowed"
+            >
+              {cooldown > 0
+                ? `Resend code in ${cooldown}s`
+                : resending
+                  ? "Resending..."
+                  : "Resend code"}
+            </button>
+          </div>
+        )}
+
+        {isReset && (
+          <>
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">New Password</span>
+              </label>
+              <InputShell extraClass="pr-2" icon={lockIcon}>
+                <input
+                  type="password"
+                  className="grow text-xs text-white placeholder-base-content/30 focus:outline-none bg-transparent"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </InputShell>
+              {newPassword.length > 0 && (
+                <div className="mt-2.5">
+                  <div className="flex gap-1.5">
+                    {[1, 2, 3, 4].map((seg) => (
+                      <div
+                        key={seg}
+                        className="h-1 flex-1 rounded-full transition-all duration-500"
+                        style={{
+                          background:
+                            resetStrength >= seg ? resetStrengthMeta.color : "rgba(255,255,255,0.08)",
+                          boxShadow: resetStrength >= seg ? `0 0 8px ${resetStrengthMeta.color}66` : "none",
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <p className={`text-[10px] font-bold mt-1.5 ${resetStrengthMeta.text}`}>
+                    Password strength: {resetStrengthMeta.label}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">Confirm Password</span>
+              </label>
+              <InputShell extraClass="pr-2" icon={lockIcon}>
+                <input
+                  type="password"
+                  className="grow text-xs text-white placeholder-base-content/30 focus:outline-none bg-transparent"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && onReset()}
+                  placeholder="••••••••"
+                />
+              </InputShell>
+            </div>
+          </>
+        )}
+
+        {error && (
+          <div className="alert alert-error bg-error/15 border border-error/30 text-error rounded-xl text-xs py-3 px-4 flex items-center gap-2">
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>{error}</span>
+          </div>
+        )}
+
+        <button
+          className="btn btn-primary btn-shine w-full rounded-2xl h-12 font-black text-xs uppercase tracking-wider bg-gradient-to-r from-primary to-secondary border-none text-white hover:opacity-95 shadow-xl shadow-primary/25 hover:scale-[1.01] active:scale-95 transition-all"
+          onClick={isVerify ? onVerify : isForgot ? onForgot : onReset}
+          disabled={loading || (isVerify ? !otp : isForgot ? !emailId : !otp || !newPassword || !confirmPassword)}
+        >
+          {loading ? (
+            <span className="loading loading-spinner loading-xs"></span>
+          ) : isVerify ? (
+            "Verify & Activate"
+          ) : isForgot ? (
+            "Send Reset Code"
+          ) : (
+            "Reset Password"
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const Login = () => {
   const [emailId, setEmailId] = useState("");
   const [password, setPassword] = useState("");
@@ -130,6 +336,15 @@ const Login = () => {
   const [lastName, setLastName] = useState("");
   const [isLoginForm, setIsLoginForm] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+
+  const [view, setView] = useState("auth"); // auth | verify | forgot | reset
+  const [otp, setOtp] = useState("");
+  const [flowEmail, setFlowEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
 
   const [toast, setToast] = useState(false);
   const [error, setError] = useState("");
@@ -141,9 +356,17 @@ const Login = () => {
   const tiltRef = useRef(null);
   const glareRef = useRef(null);
 
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
   const typed = useTypewriter(TAGLINES);
   const strength = isLoginForm ? -1 : computeStrength(password);
   const strengthMeta = STRENGTH_META[Math.max(strength, 0)];
+  const resetStrength = computeStrength(newPassword);
+  const resetStrengthMeta = STRENGTH_META[Math.max(resetStrength, 0)];
 
   const handleLogin = async () => {
     setError("");
@@ -162,8 +385,17 @@ const Login = () => {
         return navigate("/feed");
       }, 1500);
     } catch (err) {
-      console.log(err);
-      setError(err?.response?.data || "Login failed. Please check your credentials.");
+      const message = String(
+        err?.response?.data || err?.message || "Login failed. Please check your credentials."
+      );
+      if (err?.response?.status === 403 && /verify/i.test(message)) {
+        setFlowEmail(emailId);
+        setOtp("");
+        setView("verify");
+        setError("");
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -178,6 +410,31 @@ const Login = () => {
         { firstName, lastName, emailId, password },
         { withCredentials: true }
       );
+      setFlowEmail(emailId);
+      setOtp("");
+      setView("verify");
+      setSuccessMsg(
+        res.data?.emailSent
+          ? "We sent a 6-digit code to your email. Enter it below to activate your account."
+          : "Account created! The verification email could not be sent right now — use Resend code below."
+      );
+    } catch (err) {
+      console.log(err);
+      setError(err?.response?.data || "Signup failed. Please check your details.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await axios.post(
+        BASE_URL + "verify-email",
+        { emailId: flowEmail, otp },
+        { withCredentials: true }
+      );
       dispatch(addUser(res.data.data));
       setToast(true);
       fireWelcome();
@@ -187,7 +444,82 @@ const Login = () => {
       }, 1500);
     } catch (err) {
       console.log(err);
-      setError(err?.response?.data || "Signup failed. Please check your details.");
+      setError(err?.response?.data || "Verification failed. Please check the code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (cooldown > 0) return;
+    setResending(true);
+    setError("");
+    try {
+      await axios.post(
+        BASE_URL + "resend-verification",
+        { emailId: flowEmail },
+        { withCredentials: true }
+      );
+      setCooldown(30);
+      setOtp("");
+      setSuccessMsg("A fresh code has been sent. Check your inbox.");
+    } catch (err) {
+      console.log(err);
+      setError(err?.response?.data || "Could not resend the code. Try again shortly.");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const handleForgot = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await axios.post(
+        BASE_URL + "forgot-password",
+        { emailId: flowEmail || emailId },
+        { withCredentials: true }
+      );
+      setFlowEmail(emailId);
+      setOtp("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setSuccessMsg(
+        "If an account exists for that email, a reset code is on its way. Enter it below with your new password."
+      );
+      setView("reset");
+    } catch (err) {
+      console.log(err);
+      setError(err?.response?.data || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = async () => {
+    setError("");
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await axios.post(
+        BASE_URL + "reset-password",
+        { emailId: flowEmail, otp, password: newPassword },
+        { withCredentials: true }
+      );
+      setView("auth");
+      setIsLoginForm(true);
+      setEmailId(flowEmail);
+      setPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setOtp("");
+      setSuccessMsg("Password reset successful! Sign in with your new password.");
+    } catch (err) {
+      console.log(err);
+      setError(err?.response?.data || "Could not reset the password. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -365,6 +697,8 @@ const Login = () => {
                 </p>
               </div>
 
+              {view === "auth" ? (
+                <>
               {/* Segmented Switcher */}
               <div className="relative flex bg-base-900/80 p-1 rounded-2xl border border-white/10 mb-8 animate-slide-up" style={{ animationDelay: "0.1s" }}>
                 <span
@@ -542,6 +876,20 @@ const Login = () => {
                     "Create Developer Profile"
                   )}
                 </button>
+
+                {isLoginForm && (
+                  <button
+                    className="w-full text-center text-[11px] font-bold text-base-content/50 hover:text-primary transition-colors mt-3"
+                    onClick={() => {
+                      setError("");
+                      setFlowEmail(emailId);
+                      setOtp("");
+                      setView("forgot");
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                )}
                 <p className="text-[10px] text-base-content/40 text-center mt-4 flex items-center justify-center gap-1.5">
                   <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -549,6 +897,37 @@ const Login = () => {
                   Free forever for developers • Encrypted & secure
                 </p>
               </div>
+                </>
+              ) : (
+                <FlowView
+                  view={view}
+                  flowEmail={flowEmail}
+                  otp={otp}
+                  setOtp={setOtp}
+                  newPassword={newPassword}
+                  setNewPassword={setNewPassword}
+                  confirmPassword={confirmPassword}
+                  setConfirmPassword={setConfirmPassword}
+                  emailId={emailId}
+                  setEmailId={setEmailId}
+                  cooldown={cooldown}
+                  resending={resending}
+                  successMsg={successMsg}
+                  error={error}
+                  loading={loading}
+                  resetStrengthMeta={resetStrengthMeta}
+                  resetStrength={resetStrength}
+                  onVerify={handleVerify}
+                  onResend={handleResend}
+                  onForgot={handleForgot}
+                  onReset={handleReset}
+                  onBack={() => {
+                    setView("auth");
+                    setError("");
+                    setSuccessMsg("");
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
