@@ -13,6 +13,7 @@ import { MembershipBadge } from "../utils/membershipUtils";
 import MediaImage from "./MediaImage";
 import ConstellationCanvas from "./ConstellationCanvas";
 import PhotoViewer from "./PhotoViewer";
+import LeetCodeHeatmap, { extractLeetcodeUsername } from "./LeetCodeHeatmap";
 
 const GENDER_GLYPH = {
   Male: { symbol: "♂", cls: "border-sky-400/40 bg-sky-500/15 text-sky-300" },
@@ -269,6 +270,11 @@ const UserProfileView = () => {
     })).filter((l) => l.value && l.value.trim());
   }, [profile]);
 
+  const leetcodeUsername = useMemo(
+    () => extractLeetcodeUsername(profile?.codingProfiles?.leetcode),
+    [profile?.codingProfiles?.leetcode],
+  );
+
   const hobbies = useMemo(
     () => (Array.isArray(profile?.hobbies) ? profile.hobbies.filter(Boolean) : []),
     [profile?.hobbies],
@@ -294,8 +300,9 @@ const UserProfileView = () => {
     { id: "journey", label: "Journey", show: true },
     { id: "vibe", label: "Vibe", show: hobbies.length > 0 || likes.length > 0 || dislikes.length > 0 },
     { id: "media", label: "Media", show: allPhotos.length > 1 },
+    { id: "activity", label: "Dev Signal", show: !!leetcodeUsername },
     { id: "links", label: "Links", show: socialLinks.length > 0 || codingLinks.length > 0 || !!profile?.resumeURL },
-  ].filter((s) => s.show), [profile?.about, skillList.length, hobbies.length, likes.length, dislikes.length, allPhotos.length, socialLinks.length, codingLinks.length, profile?.resumeURL]);
+  ].filter((s) => s.show), [profile?.about, skillList.length, hobbies.length, likes.length, dislikes.length, allPhotos.length, socialLinks.length, codingLinks.length, profile?.resumeURL, leetcodeUsername]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -943,11 +950,27 @@ const UserProfileView = () => {
         </section>
       )}
 
+      {/* ══════════ DEV SIGNAL (LEETCODE HEATMAP) ══════════ */}
+      {leetcodeUsername && (
+        <section id="activity" className="relative max-w-4xl mx-auto px-4 pt-16 scroll-mt-24">
+          <Reveal>
+            <SectionHeader
+              index={6}
+              title="Dev Signal"
+              subtitle={`The daily grind behind ${profile.firstName}'s skill graph`}
+            />
+          </Reveal>
+          <Reveal variant="up">
+            <LeetCodeHeatmap userId={userId} username={leetcodeUsername} />
+          </Reveal>
+        </section>
+      )}
+
       {/* ══════════ LINKS ══════════ */}
       {(socialLinks.length > 0 || codingLinks.length > 0 || profile.resumeURL) && (
         <section id="links" className="relative max-w-4xl mx-auto px-4 pt-16 scroll-mt-24">
           <Reveal>
-            <SectionHeader index={6} title="Connect Elsewhere" subtitle="Find them across the web" />
+            <SectionHeader index={7} title="Connect Elsewhere" subtitle="Find them across the web" />
           </Reveal>
           <div className="flex flex-wrap gap-2.5">
             {socialLinks.map((l, idx) => {
