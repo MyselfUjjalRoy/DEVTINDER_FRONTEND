@@ -7,6 +7,8 @@ import { BASE_URL, resolveMediaUrl } from "../utils/constants";
 import MediaImage from "./MediaImage";
 import UserCard from "./UserCard";
 import { MembershipBadge } from "../utils/membershipUtils";
+import CalendarPicker from "./CalendarPicker";
+import GenderSelect from "./GenderSelect";
 
 const AvatarUploadIcon = ({ className }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -14,12 +16,23 @@ const AvatarUploadIcon = ({ className }) => (
   </svg>
 );
 
-const toCommaList = (arr) => (Array.isArray(arr) ? arr.join(", ") : arr || "");
-const toArray = (str) =>
-  (str || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+const MAX_TAGS = { skills: 10, hobbies: 5, likes: 5, dislikes: 5 };
+
+const calculateAge = (dob) => {
+  if (!dob) return "";
+  const [y, m, d] = dob.split("-").map(Number);
+  const birth = new Date(y, m - 1, d);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const monthDiff = now.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return Number.isFinite(age) && age > 0 ? age : "";
+};
+
+const toDateInputValue = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 const SectionHeader = ({ icon, title, subtitle }) => (
   <div className="border-b border-white/10 pb-4 mb-5 flex items-start gap-3">
@@ -33,37 +46,148 @@ const SectionHeader = ({ icon, title, subtitle }) => (
   </div>
 );
 
-const TextInput = ({ label, value, onChange, placeholder, type = "text", hint, ...rest }) => (
-  <div className="form-control">
-    <label className="label py-1">
-      <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">{label}</span>
-    </label>
-    <input
-      type={type}
-      {...rest}
-      className="input input-bordered bg-base-900/60 border-white/10 text-white focus:outline-none focus:border-primary text-xs rounded-xl h-11"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-    />
-    {hint && <p className="text-[10px] text-base-content/40 mt-1">{hint}</p>}
-  </div>
-);
+const TextInput = ({ label, value, onChange, placeholder, type = "text", hint, validate, ...rest }) => {
+  const [error, setError] = useState("");
+
+  const runValidation = (v) => {
+    if (typeof validate !== "function") {
+      setError("");
+      return;
+    }
+    setError(validate(v) || "");
+  };
+
+  return (
+    <div className="form-control">
+      <label className="label py-1">
+        <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">{label}</span>
+      </label>
+      <input
+        type={type}
+        {...rest}
+        className={`input input-bordered bg-base-900/60 text-white focus:outline-none rounded-xl h-11 text-base sm:text-xs transition-colors ${
+          error ? "border-error/60 focus:border-error" : "border-white/10 focus:border-primary"
+        }`}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          if (error) runValidation(e.target.value);
+        }}
+        onBlur={() => runValidation(value)}
+        aria-invalid={Boolean(error)}
+        placeholder={placeholder}
+      />
+      {error ? (
+        <p className="text-[10px] font-bold text-error mt-1 flex items-center gap-1">
+          <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          {error}
+        </p>
+      ) : (
+        hint && <p className="text-[10px] text-base-content/40 mt-1">{hint}</p>
+      )}
+    </div>
+  );
+};
+
+const TagInput = ({ label, value, onChange, max, placeholder, hint }) => {
+  const [draft, setDraft] = useState("");
+  const full = value.length >= max;
+
+  const addTag = (raw) => {
+    const tag = String(raw || "").trim().replace(/,$/, "");
+    if (!tag) return;
+    if (value.some((t) => t.toLowerCase() === tag.toLowerCase())) {
+      setDraft("");
+      return;
+    }
+    if (value.length >= max) return;
+    onChange([...value, tag]);
+    setDraft("");
+  };
+
+  const removeTag = (tag) => onChange(value.filter((t) => t !== tag));
+
+  return (
+    <div className="form-control">
+      <label className="label py-1">
+        <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">{label}</span>
+        <span className="label-text text-[10px] font-black text-base-content/40">{value.length}/{max}</span>
+      </label>
+      <div
+        className={`flex items-center gap-2 rounded-xl border px-3 bg-base-900/60 transition-colors ${
+          full
+            ? "border-primary/50"
+            : "border-white/10 focus-within:border-primary"
+        }`}
+      >
+        <input
+          type="text"
+          className="flex-1 min-w-0 bg-transparent text-base sm:text-xs text-white placeholder:text-base-content/30 focus:outline-none h-11"
+          value={draft}
+          disabled={full}
+          placeholder={full ? `Max ${max} added` : placeholder}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === ",") {
+              e.preventDefault();
+              addTag(draft);
+            } else if (e.key === "Backspace" && !draft && value.length) {
+              onChange(value.slice(0, -1));
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => addTag(draft)}
+          disabled={full || !draft.trim()}
+          className="shrink-0 text-[10px] font-black uppercase tracking-wider text-primary disabled:text-base-content/30 h-11 px-2"
+        >
+          Add
+        </button>
+      </div>
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2.5">
+          {value.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary px-3 py-1.5 text-[11px] font-bold"
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() => removeTag(tag)}
+                className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center hover:bg-error hover:text-white transition-colors"
+                aria-label={`Remove ${tag}`}
+              >
+                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      {hint && <p className="text-[10px] text-base-content/40 mt-1">{hint}</p>}
+    </div>
+  );
+};
 
 const EditProfile = ({ user }) => {
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
-  const [age, setAge] = useState(user?.age || "");
+  const [dob, setDob] = useState(user?.dob || "");
   const [gender, setGender] = useState(user?.gender || "");
   const [about, setAbout] = useState(user?.about || "");
   const [photoURL, setPhotoURL] = useState(user?.photoURL || "");
-  const [skills, setSkills] = useState(toCommaList(user?.skills));
+  const [skills, setSkills] = useState(Array.isArray(user?.skills) ? user.skills.filter(Boolean) : []);
 
   const [city, setCity] = useState(user?.location?.city || "");
   const [country, setCountry] = useState(user?.location?.country || "");
-  const [hobbies, setHobbies] = useState(toCommaList(user?.hobbies));
-  const [likes, setLikes] = useState(toCommaList(user?.likes));
-  const [dislikes, setDislikes] = useState(toCommaList(user?.dislikes));
+  const [hobbies, setHobbies] = useState(Array.isArray(user?.hobbies) ? user.hobbies.filter(Boolean) : []);
+  const [likes, setLikes] = useState(Array.isArray(user?.likes) ? user.likes.filter(Boolean) : []);
+  const [dislikes, setDislikes] = useState(Array.isArray(user?.dislikes) ? user.dislikes.filter(Boolean) : []);
   const [photos, setPhotos] = useState(
     Array.isArray(user?.photos) ? user.photos.filter(Boolean) : []
   );
@@ -100,6 +224,41 @@ const EditProfile = ({ user }) => {
   const photoInputRef = useRef(null);
   const photoTargetRef = useRef(-1);
   const dispatch = useDispatch();
+
+  const now = new Date();
+  const dobBounds = {
+    min: toDateInputValue(new Date(now.getFullYear() - 100, now.getMonth(), now.getDate())),
+    max: toDateInputValue(new Date(now.getFullYear() - 15, now.getMonth(), now.getDate())),
+  };
+  const maxPassingYear = now.getFullYear() + 5;
+
+  const validatePassingYear = (v) => {
+    if (!v) return "";
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "Enter a valid year";
+    if (!Number.isInteger(n)) return "Year must be a whole number";
+    if (n < 1950) return "Can't be before 1950";
+    if (n > maxPassingYear) return `Can't be after ${maxPassingYear}`;
+    return "";
+  };
+
+  const validateCgpa = (v) => {
+    if (!v) return "";
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "Enter a valid CGPA";
+    if (n < 0) return "Can't be negative";
+    if (n > 10) return "Can't exceed 10";
+    return "";
+  };
+
+  const validateExperience = (v) => {
+    if (!v) return "";
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "Enter a valid number";
+    if (n < 0) return "Can't be negative";
+    if (n > 60) return "Can't exceed 60 years";
+    return "";
+  };
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -192,6 +351,24 @@ const EditProfile = ({ user }) => {
 
   const saveProfile = async () => {
     setError("");
+
+    if (dob && !calculateAge(dob)) {
+      setError("Please select a valid date of birth.");
+      return;
+    }
+    if (passingYear && (Number(passingYear) < 1950 || Number(passingYear) > maxPassingYear)) {
+      setError(`Passing year must be between 1950 and ${maxPassingYear}.`);
+      return;
+    }
+    if (cgpa && (Number(cgpa) < 0 || Number(cgpa) > 10)) {
+      setError("CGPA must be between 0 and 10.");
+      return;
+    }
+    if (experienceYears && (Number(experienceYears) < 0 || Number(experienceYears) > 60)) {
+      setError("Years of experience must be between 0 and 60.");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await axios.patch(
@@ -200,14 +377,14 @@ const EditProfile = ({ user }) => {
           firstName,
           lastName,
           photoURL,
-          age: age ? Number(age) : undefined,
+          dob,
           gender,
           about,
-          skills: toArray(skills),
+          skills,
           location: { city, country },
-          hobbies: toArray(hobbies),
-          likes: toArray(likes),
-          dislikes: toArray(dislikes),
+          hobbies,
+          likes,
+          dislikes,
           photos: photos.filter(Boolean),
           isStudent,
           education: {
@@ -267,17 +444,15 @@ const EditProfile = ({ user }) => {
     }
   };
 
-  const currentSkillsArray = toArray(skills);
-
   const previewUser = {
     _id: user?._id || "preview-id",
     firstName: firstName || "Your",
     lastName: lastName || "Name",
     photoURL: photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=500&q=80",
-    age: age ? Number(age) : 25,
+    age: calculateAge(dob) || 25,
     gender: gender || "Developer",
     about: about || "Write a bio to tell matches what you are coding...",
-    skills: currentSkillsArray.length > 0 ? currentSkillsArray : ["React", "JavaScript", "Tailwind"],
+    skills: skills.length > 0 ? skills : ["React", "JavaScript", "Tailwind"],
     location: { city, country },
     photos: photos.filter(Boolean),
     isStudent,
@@ -295,7 +470,7 @@ const EditProfile = ({ user }) => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
         {/* Left Column: Form Controls */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="lg:col-span-7 space-y-6 order-2 lg:order-1">
 
           <div className="glass-card shadow-2xl rounded-3xl border border-white/10 p-6 sm:p-8 backdrop-blur-2xl">
             <div className="border-b border-white/10 pb-5 mb-6">
@@ -352,7 +527,7 @@ const EditProfile = ({ user }) => {
                 </div>
                 <input
                   type="text"
-                  className="input input-bordered bg-base-900/60 border-white/10 text-white focus:outline-none focus:border-primary text-xs rounded-xl h-11 mt-3"
+                  className="input input-bordered bg-base-900/60 border-white/10 text-white focus:outline-none focus:border-primary text-base sm:text-xs rounded-xl h-11 mt-3"
                   value={photoURL.startsWith("/uploads/") ? "" : photoURL}
                   onChange={(e) => setPhotoURL(e.target.value)}
                   placeholder="https://example.com/avatar.jpg"
@@ -360,15 +535,30 @@ const EditProfile = ({ user }) => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <TextInput label="Age" value={age} onChange={setAge} placeholder="Age" type="number" />
-                <TextInput label="Gender" value={gender} onChange={setGender} placeholder="e.g. Male, Female, Others" />
+                <div className="form-control">
+                  <CalendarPicker
+                    label="Date of Birth"
+                    value={dob}
+                    onChange={setDob}
+                    minDate={dobBounds.min}
+                    maxDate={dobBounds.max}
+                  />
+                  <p className="text-[10px] text-base-content/40 mt-1">
+                    {dob ? `Age: ${calculateAge(dob)}` : "No age set yet"}
+                  </p>
+                </div>
+                <div className="form-control">
+                  <GenderSelect value={gender} onChange={setGender} />
+                </div>
               </div>
 
-              <TextInput
-                label="Skills (comma-separated)"
+              <TagInput
+                label="Skills"
                 value={skills}
                 onChange={setSkills}
-                placeholder="React 19, Redux, Node.js, TypeScript, Tailwind"
+                max={MAX_TAGS.skills}
+                placeholder="Type a skill, press Enter"
+                hint={`Add up to ${MAX_TAGS.skills} skills`}
               />
 
               <div className="form-control">
@@ -376,7 +566,7 @@ const EditProfile = ({ user }) => {
                   <span className="label-text text-[11px] font-bold uppercase tracking-wider text-base-content/70">Developer Bio</span>
                 </label>
                 <textarea
-                  className="textarea textarea-bordered bg-base-900/60 border-white/10 text-white focus:outline-none focus:border-primary text-xs rounded-xl min-h-[6rem] leading-relaxed resize-none"
+                  className="textarea textarea-bordered bg-base-900/60 border-white/10 text-white focus:outline-none focus:border-primary text-base sm:text-xs rounded-xl min-h-[6rem] leading-relaxed resize-none"
                   value={about}
                   onChange={(e) => setAbout(e.target.value)}
                   placeholder="Tell potential matches what tech projects you are building and what skills you are looking to pair on..."
@@ -402,24 +592,30 @@ const EditProfile = ({ user }) => {
                 <TextInput label="City" value={city} onChange={setCity} placeholder="e.g. Kolkata" />
                 <TextInput label="Country" value={country} onChange={setCountry} placeholder="e.g. India" />
               </div>
-              <TextInput
-                label="Hobbies (comma-separated)"
+              <TagInput
+                label="Hobbies"
                 value={hobbies}
                 onChange={setHobbies}
-                placeholder="photography, open source, gaming, blogging"
+                max={MAX_TAGS.hobbies}
+                placeholder="Type a hobby, press Enter"
+                hint={`Add up to ${MAX_TAGS.hobbies} hobbies`}
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <TextInput
-                  label="Likes (comma-separated)"
+                <TagInput
+                  label="Likes"
                   value={likes}
                   onChange={setLikes}
-                  placeholder="AI, clean code, coffee, hackathons"
+                  max={MAX_TAGS.likes}
+                  placeholder="Type a like, press Enter"
+                  hint={`Add up to ${MAX_TAGS.likes} likes`}
                 />
-                <TextInput
-                  label="Dislikes (comma-separated)"
+                <TagInput
+                  label="Dislikes"
                   value={dislikes}
                   onChange={setDislikes}
-                  placeholder="meetings, flaky tests, tight deadlines"
+                  max={MAX_TAGS.dislikes}
+                  placeholder="Type a dislike, press Enter"
+                  hint={`Add up to ${MAX_TAGS.dislikes} dislikes`}
                 />
               </div>
             </div>
@@ -445,7 +641,7 @@ const EditProfile = ({ user }) => {
               onChange={handlePhotoAdd}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {[0, 1, 2].map((idx) => {
                 const url = photos[idx];
                 return (
@@ -546,9 +742,9 @@ const EditProfile = ({ user }) => {
                 <TextInput label="College / University" value={college} onChange={setCollege} placeholder="e.g. Jadavpur University" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <TextInput label="Degree / Course" value={degree} onChange={setDegree} placeholder="e.g. B.Tech CSE" />
-                  <TextInput label="Passing Year" value={passingYear} onChange={setPassingYear} placeholder="e.g. 2027" type="number" />
+                  <TextInput label="Passing Year" value={passingYear} onChange={setPassingYear} placeholder="e.g. 2027" type="number" min={1950} max={maxPassingYear} hint={`Between 1950 and ${maxPassingYear}`} validate={validatePassingYear} />
                 </div>
-                <TextInput label="CGPA" value={cgpa} onChange={setCgpa} placeholder="e.g. 8.5" type="number" step="0.01" />
+                <TextInput label="CGPA" value={cgpa} onChange={setCgpa} placeholder="e.g. 8.5" type="number" step="0.01" min={0} max={10} hint="Between 0 and 10" validate={validateCgpa} />
               </div>
             ) : (
               <div className="space-y-4">
@@ -562,7 +758,10 @@ const EditProfile = ({ user }) => {
                   onChange={setExperienceYears}
                   placeholder="e.g. 2"
                   type="number"
-                  hint="Optional — helpful for matching with devs at a similar stage"
+                  min={0}
+                  max={60}
+                  hint="Between 0 and 60 — helpful for matching with devs at a similar stage"
+                  validate={validateExperience}
                 />
               </div>
             )}
@@ -639,7 +838,7 @@ const EditProfile = ({ user }) => {
               </div>
               <input
                 type="text"
-                className="input input-bordered bg-base-900/60 border-white/10 text-white focus:outline-none focus:border-primary text-xs rounded-xl h-11 mt-3"
+                className="input input-bordered bg-base-900/60 border-white/10 text-white focus:outline-none focus:border-primary text-base sm:text-xs rounded-xl h-11 mt-3"
                 value={resumeURL.startsWith("/uploads/") ? "" : resumeURL}
                 onChange={(e) => setResumeURL(e.target.value)}
                 placeholder="https://example.com/resume.pdf"
@@ -662,7 +861,7 @@ const EditProfile = ({ user }) => {
               <p className="text-xs text-base-content/50 mt-0.5">Email, password & membership can only be changed via dedicated flows.</p>
             </div>
             <button
-              className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white px-8 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all h-12"
+              className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white w-full sm:w-auto px-8 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/20 sm:hover:scale-105 active:scale-95 transition-all h-12"
               onClick={saveProfile}
               disabled={loading}
             >
@@ -732,8 +931,8 @@ const EditProfile = ({ user }) => {
         </div>
 
         {/* Right Column: Live Card Preview */}
-        <div className="lg:col-span-5 flex flex-col items-center">
-          <div className="sticky top-24 w-full flex flex-col items-center space-y-4">
+        <div className="lg:col-span-5 flex flex-col items-center order-1 lg:order-2">
+          <div className="lg:sticky lg:top-24 w-full flex flex-col items-center space-y-4">
             <span className="inline-flex items-center gap-2 text-[10px] uppercase font-black tracking-[0.2em] text-primary pl-1">
               <span className="w-2 h-2 rounded-full bg-primary animate-ping"></span>
               Live Card Preview

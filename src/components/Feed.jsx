@@ -144,7 +144,7 @@ const Feed = () => {
   const nextDev = feed[1];
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-[78vh] p-4 py-8">
+    <div className="relative flex flex-col items-center justify-center min-h-[calc(100dvh-10rem)] px-3 sm:px-4 py-3 sm:py-8">
       <FeedBackground />
       {/* Keyboard Shortcut Indicator */}
       <div className="hidden sm:flex items-center gap-4 mb-3 text-xs text-base-content/40 font-bold tracking-wider uppercase">
