@@ -4,17 +4,33 @@ const COLORS = ["#ff2d55", "#22d3ee", "#fbbf24", "#34d399", "#a78bfa", "#f472b6"
 
 const ConstellationCanvas = ({ skills }) => {
   const canvasRef = useRef(null);
+  const mouse = useRef({ x: 0.5, y: 0.5, inside: false });
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !skills.length) return;
     const ctx = canvas.getContext("2d");
+    const panel = canvas.parentElement;
     let raf;
     let W = 0;
     let H = 0;
     let shooting = null;
     let t = 0;
+    let driftX = 0;
+    let driftY = 0;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const onMove = (e) => {
+      const r = canvas.getBoundingClientRect();
+      mouse.current.x = (e.clientX - r.left) / r.width;
+      mouse.current.y = (e.clientY - r.top) / r.height;
+      mouse.current.inside = true;
+    };
+    const onLeave = () => {
+      mouse.current.inside = false;
+    };
+    panel.addEventListener("mousemove", onMove);
+    panel.addEventListener("mouseleave", onLeave);
 
     const nodes = skills.map((skill, i) => {
       const angle = (i / skills.length) * Math.PI * 2 + 0.6;
@@ -47,9 +63,34 @@ const ConstellationCanvas = ({ skills }) => {
       t += 0.0014;
       ctx.clearRect(0, 0, W, H);
 
-      const cx = W / 2;
-      const cy = H / 2;
+      const targetX = mouse.current.inside ? (mouse.current.x - 0.5) * 90 : 0;
+      const targetY = mouse.current.inside ? (mouse.current.y - 0.5) * 60 : 0;
+      driftX += (targetX - driftX) * 0.05;
+      driftY += (targetY - driftY) * 0.05;
+
+      const cx = W / 2 + driftX;
+      const cy = H / 2 + driftY;
       const scale = Math.min(W, H);
+
+      // radar sweep + dashed orbit ring
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(now / 2600);
+      ctx.strokeStyle = "rgba(255,255,255,0.05)";
+      ctx.setLineDash([5, 16]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, Math.min(W, H) * 0.47, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const sweepA = (now / 3000) % (Math.PI * 2);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, Math.min(W, H) * 0.47, sweepA - 0.1, sweepA);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(255,255,255,0.028)";
+      ctx.fill();
+      ctx.restore();
 
       // ambient starfield
       for (let i = 0; i < 46; i++) {
@@ -66,19 +107,40 @@ const ConstellationCanvas = ({ skills }) => {
         y: cy + (n.baseY - 0.5) * scale * 1.02 + Math.cos(t * 0.7 + i) * 5,
       }));
 
+      // hover focus — nearest node to cursor
+      let focus = -1;
+      let fd = Infinity;
+      if (mouse.current.inside) {
+        const mx = mouse.current.x * W;
+        const my = mouse.current.y * H;
+        for (let i = 0; i < pos.length; i++) {
+          const d = (pos[i].x - mx) ** 2 + (pos[i].y - my) ** 2;
+          if (d < fd) {
+            fd = d;
+            focus = i;
+          }
+        }
+        if (fd > 52 * 52) focus = -1;
+      }
+
       // links
       for (let i = 0; i < pos.length; i++) {
         const p = pos[i];
         const pulse = 0.25 + 0.2 * Math.sin(now / 1200 + p.phase);
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = `rgba(255,255,255,${0.12 + pulse * 0.2})`;
+        const focused = i === focus;
+        ctx.lineWidth = focused ? 1.6 : 1;
+        ctx.strokeStyle = focused
+          ? p.color
+          : `rgba(255,255,255,${0.12 + pulse * 0.2})`;
         ctx.beginPath();
         ctx.moveTo(cx, cy);
         ctx.lineTo(p.x, p.y);
         ctx.stroke();
 
         const q = pos[(i + 1) % pos.length];
-        ctx.strokeStyle = `rgba(255,255,255,${0.05 + pulse * 0.12})`;
+        ctx.strokeStyle = focused
+          ? p.color
+          : `rgba(255,255,255,${0.05 + pulse * 0.12})`;
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(q.x, q.y);
@@ -86,25 +148,40 @@ const ConstellationCanvas = ({ skills }) => {
       }
 
       // skill nodes + labels
-      for (const p of pos) {
-        const twinkle = 0.55 + 0.45 * Math.sin(now / 700 + p.tw);
+      for (let i = 0; i < pos.length; i++) {
+        const p = pos[i];
+        const focused = i === focus;
+        const twinkle = focused ? 1 : 0.55 + 0.45 * Math.sin(now / 700 + p.tw);
         ctx.save();
         ctx.shadowColor = p.color;
-        ctx.shadowBlur = 12 * twinkle;
+        ctx.shadowBlur = focused ? 26 : 12 * twinkle;
         ctx.fillStyle = p.color;
-        ctx.globalAlpha = 0.5 + 0.5 * twinkle;
+        ctx.globalAlpha = focused ? 1 : 0.5 + 0.5 * twinkle;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.rad, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, focused ? p.rad + 2 : p.rad, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
+        if (focused) {
+          ctx.save();
+          ctx.globalAlpha = 0.55 + 0.3 * Math.sin(now / 400);
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.rad + 12, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
         ctx.save();
-        ctx.globalAlpha = 0.72 + 0.28 * Math.sin(now / 900 + p.phase);
-        ctx.fillStyle = "#e2e8f0";
-        ctx.font = "700 12px 'Fira Code', ui-monospace, SFMono-Regular, monospace";
+        ctx.globalAlpha = focused ? 1 : 0.72 + 0.28 * Math.sin(now / 900 + p.phase);
+        ctx.fillStyle = focused ? "#ffffff" : "#e2e8f0";
+        ctx.font = focused
+          ? "900 13px 'Fira Code', ui-monospace, SFMono-Regular, monospace"
+          : "700 12px 'Fira Code', ui-monospace, SFMono-Regular, monospace";
         ctx.textAlign = "center";
         ctx.shadowColor = p.color;
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = focused ? 16 : 10;
         ctx.fillText(p.skill, p.x, p.y - p.rad - 8);
         ctx.restore();
       }
@@ -157,6 +234,8 @@ const ConstellationCanvas = ({ skills }) => {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
+      panel.removeEventListener("mousemove", onMove);
+      panel.removeEventListener("mouseleave", onLeave);
     };
   }, [skills]);
 

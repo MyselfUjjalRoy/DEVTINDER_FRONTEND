@@ -385,16 +385,32 @@ const UserProfileView = () => {
           <button
             onClick={() => reviewRequest("accepted")}
             disabled={busy}
-            className="btn btn-primary bg-gradient-to-r from-emerald-500 to-teal-400 border-none text-white rounded-2xl h-11 px-7 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/30 hover:scale-105 disabled:opacity-50 disabled:scale-100 transition-all"
+            className="btn-accept group relative inline-flex items-center gap-2.5 rounded-2xl h-12 px-7 font-black text-xs uppercase tracking-wider text-white disabled:opacity-50 disabled:scale-100"
           >
-            Accept
+            <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-500" />
+            <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-300 to-teal-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <span className="relative flex items-center gap-2.5">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white/25 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
+              Accept
+            </span>
           </button>
           <button
             onClick={() => reviewRequest("rejected")}
             disabled={busy}
-            className="btn btn-outline border-rose-400/40 text-rose-300 hover:bg-rose-500/10 rounded-2xl h-11 px-6 font-black text-xs uppercase tracking-wider disabled:opacity-50"
+            className="btn-decline group relative inline-flex items-center gap-2.5 rounded-2xl h-12 px-7 font-black text-xs uppercase tracking-wider border-2 border-rose-400/40 bg-rose-500/10 text-rose-200 disabled:opacity-50"
           >
-            Decline
+            <span className="relative flex items-center gap-2.5">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-rose-500/30 group-hover:bg-rose-500/50 group-hover:rotate-90 transition-all duration-300">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </span>
+              Decline
+            </span>
           </button>
         </>
       );
@@ -508,18 +524,32 @@ const UserProfileView = () => {
         <span className="chat-orb absolute bottom-10 right-10 w-72 h-72 rounded-full bg-secondary/20 blur-3xl" style={{ animationDelay: "-6s" }} />
 
         <div className="relative max-w-3xl mx-auto w-full text-center px-4 pt-14 pb-10">
-          <div className="fade-up relative inline-block">
-            <div className="avatar-ring breath-glow rounded-full p-[3px] mx-auto" style={{ "--bglow": "rgba(255,45,85,0.7)" }}>
-              <MediaImage
-                src={profile.photoURL}
-                alt={`${profile.firstName} ${profile.lastName || ""}`}
-                className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover"
+          <div className="profile-aura mx-auto fade-up">
+            <span className="aura-blob-a" />
+            <span className="aura-blob-b" style={{ animationDelay: "-3s" }} />
+            <span className="aura-ring inset-4" />
+            <span className="aura-ring aura-ring--rev -inset-3" />
+            <span className="aura-orbit" style={{ "--odur": "9s", "--odr": "112px", color: "#22d3ee" }}><i /></span>
+            <span className="aura-orbit" style={{ "--odur": "14s", "--odr": "104px", color: "#f472b6" }}><i /></span>
+            <span className="aura-orbit" style={{ "--odur": "19s", "--odr": "120px", color: "#fbbf24" }}><i /></span>
+            <span className="spark text-sm" style={{ top: "14%", left: "18%", animationDelay: "-0.5s" }}>✦</span>
+            <span className="spark text-[10px]" style={{ top: "22%", right: "12%", animationDelay: "-1.4s" }}>✦</span>
+            <span className="spark text-xs" style={{ bottom: "18%", left: "10%", animationDelay: "-2.2s" }}>✦</span>
+            <span className="spark text-[10px]" style={{ bottom: "24%", right: "16%", animationDelay: "-3s" }}>✦</span>
+
+            <div className="avatar-bob relative">
+              <div className="avatar-ring breath-glow rounded-full p-[3px]" style={{ "--bglow": "rgba(255,45,85,0.7)" }}>
+                <MediaImage
+                  src={profile.photoURL}
+                  alt={`${profile.firstName} ${profile.lastName || ""}`}
+                  className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover"
+                />
+              </div>
+              <span
+                title="Online"
+                className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full bg-emerald-500 border-[3px] border-[#070912] shadow-[0_0_14px_rgba(16,185,129,0.85)]"
               />
             </div>
-            <span
-              title="Online"
-              className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full bg-emerald-500 border-[3px] border-[#070912] shadow-[0_0_14px_rgba(16,185,129,0.85)]"
-            />
           </div>
 
           <h1 className="mt-5 text-4xl sm:text-5xl font-black tracking-tight text-shimmer fade-up" style={{ animationDelay: "80ms" }}>
@@ -571,43 +601,72 @@ const UserProfileView = () => {
 
       {/* ══════════ HUD STATS STRIP ══════════ */}
       <div className="relative z-10 max-w-4xl mx-auto px-4 -mt-4">
-        <div className="hud-rise premium-card rounded-3xl px-5 py-4 sm:px-8 grid grid-cols-4 gap-2 sm:gap-4">
-          <div className="flex items-center gap-2.5 sm:gap-3.5">
-            <RingGauge pct={Math.min(ageNumber, 100)} color="#ff2d55">
-              <span className="text-sm sm:text-lg font-black text-white leading-none">
+        <div className="hud-rise premium-card rounded-3xl px-5 py-4 sm:px-8 grid grid-cols-4 gap-2 divide-x divide-white/5">
+          {/* AGE — live ring */}
+          <div className="hud-cell flex flex-col items-center justify-center gap-1.5 text-center py-1">
+            <span className="hud-scan" style={{ animationDelay: "-0.6s" }} />
+            <RingGauge pct={Math.min(ageNumber, 100)} color="#ff2d55" size={54} ringW={5}>
+              <span className="text-sm sm:text-base font-black text-white leading-none">
                 <CountUp to={ageNumber} />
               </span>
             </RingGauge>
-            <div className="min-w-0">
-              <p className="text-lg sm:text-2xl font-black text-white leading-none">
-                <CountUp to={ageNumber} />
-              </p>
-              <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.14em] text-base-content/50 mt-0.5">Age</p>
-            </div>
+            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.14em] text-base-content/50">
+              Age {zodiac ? `· ${zodiac.split(" ")[0]}` : ""}
+            </p>
           </div>
-          <div className="flex items-center gap-2.5 sm:gap-3.5">
-            <RingGauge pct={Math.min((profile.work?.experienceYears || 0) / 30, 1) * 100} color="#34d399">
-              <span className="text-sm sm:text-lg font-black text-white leading-none">
-                <CountUp to={profile.work?.experienceYears || 0} />
-              </span>
-            </RingGauge>
-            <div className="min-w-0">
-              <p className="text-lg sm:text-2xl font-black text-white leading-none">
-                <CountUp to={profile.work?.experienceYears || 0} />+
-              </p>
-              <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.14em] text-base-content/50 mt-0.5">Exp</p>
+
+          {/* EXPERIENCE — flowing energy bar */}
+          <div className="hud-cell flex flex-col items-center justify-center gap-1.5 text-center py-1">
+            <span className="hud-scan" style={{ animationDelay: "-1.6s" }} />
+            <p className="text-lg sm:text-2xl font-black text-white leading-none">
+              <CountUp to={profile.work?.experienceYears || 0} />
+              <span className="text-[10px] font-black text-emerald-400 align-top">+</span>
+              <span className="ml-1 text-[10px] font-black text-base-content/50 align-baseline">yrs</span>
+            </p>
+            <div className="w-16 h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-300 to-emerald-500 exp-flow"
+                style={{ "--bar-w": `${Math.min((profile.work?.experienceYears || 0) / 30, 1) * 100}%`, width: `${Math.min((profile.work?.experienceYears || 0) / 30, 1) * 100}%` }}
+              />
             </div>
+            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.14em] text-base-content/50">
+              Exp {level ? `· ${level}` : ""}
+            </p>
           </div>
-          <div className="flex flex-col items-center justify-center gap-1 text-center">
+
+          {/* SKILLS — popping dots */}
+          <div className="hud-cell flex flex-col items-center justify-center gap-1.5 text-center py-1">
+            <span className="hud-scan" style={{ animationDelay: "-2.6s" }} />
             <p className="text-lg sm:text-2xl font-black text-white leading-none">
               <CountUp to={skillList.length} />
             </p>
+            <div className="flex items-center gap-1">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <span
+                  key={i}
+                  className={`dot-pop w-1.5 h-1.5 rounded-full ${i < Math.min(skillList.length, 5) ? "bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.9)]" : "bg-white/10"}`}
+                  style={{ animationDelay: `${i * 110}ms` }}
+                />
+              ))}
+            </div>
             <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.14em] text-base-content/50">Skills</p>
           </div>
-          <div className="flex flex-col items-center justify-center gap-1 text-center">
+
+          {/* PHOTOS — pulsing camera */}
+          <div className="hud-cell flex flex-col items-center justify-center gap-1.5 text-center py-1">
+            <span className="hud-scan" style={{ animationDelay: "-3.2s" }} />
             <p className="text-lg sm:text-2xl font-black text-white leading-none">
               <CountUp to={allPhotos.length} />
             </p>
+            <svg
+              className="cam-pulse w-4 h-4 text-primary"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9zm9 7a3 3 0 100-6 3 3 0 000 6z" />
+            </svg>
             <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.14em] text-base-content/50">Photos</p>
           </div>
         </div>
