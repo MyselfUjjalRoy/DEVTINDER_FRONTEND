@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { useSelector } from "react-redux";
 import { BASE_URL, getProfileLink, resolveMediaUrl } from "../utils/constants";
 import {
   PlatformIcon,
@@ -13,7 +12,12 @@ import { MembershipBadge } from "../utils/membershipUtils";
 import MediaImage from "./MediaImage";
 import ConstellationCanvas from "./ConstellationCanvas";
 import PhotoViewer from "./PhotoViewer";
-import LeetCodeHeatmap, { extractLeetcodeUsername } from "./LeetCodeHeatmap";
+import CursorFollower from "./CursorFollower";
+import Magnetic from "./Magnetic";
+import TiltCard from "./TiltCard";
+import CharReveal from "./CharReveal";
+import CircularBadge from "./CircularBadge";
+import Marquee from "./Marquee";
 
 const GENDER_GLYPH = {
   Male: { symbol: "♂", cls: "border-sky-400/40 bg-sky-500/15 text-sky-300" },
@@ -54,13 +58,6 @@ const zodiacFromDob = (dob) => {
   return (ZODIAC_CUTS.find(([cut]) => n <= cut) || [0, null])[1];
 };
 
-const formatDob = (dob) => {
-  if (!dob) return null;
-  const d = new Date(dob + "T00:00:00");
-  if (isNaN(d)) return null;
-  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-};
-
 const careerLevel = (years) => {
   if (!years || years <= 0) return null;
   if (years < 2) return "Fresher";
@@ -70,36 +67,116 @@ const careerLevel = (years) => {
   return "Principal / Lead";
 };
 
-const CountUp = ({ to, duration = 1000 }) => {
+const CountUp = ({ to, duration = 1000, start = true }) => {
   const [val, setVal] = useState(0);
   useEffect(() => {
+    if (!start) return undefined;
     let raf;
-    const start = performance.now();
+    const t0 = performance.now();
     const tick = (now) => {
-      const p = Math.min((now - start) / duration, 1);
+      const p = Math.min((now - t0) / duration, 1);
       setVal(Math.round(to * (1 - Math.pow(1 - p, 3))));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [to, duration]);
+  }, [to, duration, start]);
   return <>{val}</>;
 };
 
-const RingGauge = ({ pct, children, color = "#ff2d55", size = 66, ringW = 6 }) => (
-  <div className="relative shrink-0" style={{ width: size, height: size }}>
-    <div
-      className="ring-gauge absolute inset-0"
-      style={{ "--ring-p": `${pct}%`, "--ring-color": color, "--ring-w": `${ringW}px` }}
-    />
-    <div
-      className="absolute rounded-full bg-[#0c0e19]/80 flex flex-col items-center justify-center text-center overflow-hidden"
-      style={{ inset: ringW + 1 }}
-    >
-      {children}
+const useProgress = (end, duration = 1500, start = true) => {
+  const [p, setP] = useState(0);
+  useEffect(() => {
+    if (!start) return undefined;
+    let raf;
+    const t0 = performance.now();
+    const tick = (now) => {
+      const t = Math.min((now - t0) / duration, 1);
+      setP(end * (1 - Math.pow(1 - t, 3)));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [end, duration, start]);
+  return p;
+};
+
+const useInView = (ref, once = true) => {
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          if (once) io.disconnect();
+        } else if (!once) {
+          setInView(false);
+        }
+      },
+      { threshold: 0.3 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, once]);
+  return inView;
+};
+
+const StatCell = ({ label, accent = "#ff2d55", sub, target = 1, delay = 0, to = 0, unit, icon }) => {
+  const [started, setStarted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setStarted(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+  const prog = useProgress(target, 1500, started);
+  const pct = Math.min(Math.max(prog, 0), 1);
+  return (
+    <div className="app-stat" style={{ "--d": `${delay}ms`, "--sa": accent, "--sa-soft": `${accent}22` }}>
+      {icon && <span className="app-stat-icon">{icon}</span>}
+      <div className="app-stat-value">
+        <CountUp to={to} start={started} />
+        {unit && <span className="app-stat-unit">{unit}</span>}
+      </div>
+      <p className="app-stat-label">{label}</p>
+      {sub && <p className="app-stat-sub">{sub}</p>}
+      <span className="app-stat-line" style={{ transform: `scaleX(${pct})` }} aria-hidden="true" />
     </div>
-  </div>
-);
+  );
+};
+
+const WordReveal = ({ text }) => {
+  const ref = useRef(null);
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setOn(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.25 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  const words = text.split(" ");
+  return (
+    <div ref={ref} className={`quote-body${on ? " on" : ""}`}>
+      <span className="quote-mark quote-mark-open" aria-hidden="true">“</span>
+      <p className="quote-words">
+        {words.map((w, i) => (
+          <span key={i} className="quote-word" style={{ "--wd": `${i * 26}ms` }}>{w}</span>
+        ))}
+        <span className="quote-mark quote-mark-close" aria-hidden="true">”</span>
+      </p>
+      <span className="quote-underline" aria-hidden="true" />
+    </div>
+  );
+};
 
 const Reveal = ({ children, className = "", variant = "up", delay = 0 }) => {
   const ref = useRef(null);
@@ -126,15 +203,12 @@ const Reveal = ({ children, className = "", variant = "up", delay = 0 }) => {
 };
 
 const SectionHeader = ({ index, title, subtitle }) => (
-  <div className="flex items-end justify-between gap-4 mb-8">
-    <div>
-      <p className="font-mono text-[10px] font-bold tracking-[0.35em] text-primary/70 mb-2">
-        0{index} / {title.toLowerCase().replace(/\s+/g, "_")}
-      </p>
-      <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">{title}</h2>
-      {subtitle && <p className="mt-1 text-xs font-semibold text-base-content/50">{subtitle}</p>}
-    </div>
-    <span className="hidden sm:block w-24 h-px bg-gradient-to-r from-primary/50 to-transparent mb-2" />
+  <div className="app-sec-head">
+    <p className="app-eyebrow">
+      0{index} · {title.toLowerCase().replace(/\s+/g, "_")}
+    </p>
+    <h2 className="app-sec-title">{title}</h2>
+    {subtitle && <p className="app-sec-sub">{subtitle}</p>}
   </div>
 );
 
@@ -177,7 +251,10 @@ const UserProfileView = () => {
   const [busy, setBusy] = useState(false);
   const [activeSection, setActiveSection] = useState("about");
   const [scrollY, setScrollY] = useState(0);
+  const [pageP, setPageP] = useState(0);
   const [viewerIndex, setViewerIndex] = useState(null);
+  const mediaRef = useRef(null);
+  const mediaInView = useInView(mediaRef);
 
   const fetchProfile = useCallback(async () => {
     setLoading(true);
@@ -270,11 +347,6 @@ const UserProfileView = () => {
     })).filter((l) => l.value && l.value.trim());
   }, [profile]);
 
-  const leetcodeUsername = useMemo(
-    () => extractLeetcodeUsername(profile?.codingProfiles?.leetcode),
-    [profile?.codingProfiles?.leetcode],
-  );
-
   const hobbies = useMemo(
     () => (Array.isArray(profile?.hobbies) ? profile.hobbies.filter(Boolean) : []),
     [profile?.hobbies],
@@ -290,7 +362,6 @@ const UserProfileView = () => {
 
   const glyph = GENDER_GLYPH[profile?.gender];
   const rel = RELATION_META[relationship] || RELATION_META.stranger;
-  const dobText = formatDob(profile?.dob);
   const zodiac = zodiacFromDob(profile?.dob);
   const level = careerLevel(profile?.work?.experienceYears);
 
@@ -300,13 +371,25 @@ const UserProfileView = () => {
     { id: "journey", label: "Journey", show: true },
     { id: "vibe", label: "Vibe", show: hobbies.length > 0 || likes.length > 0 || dislikes.length > 0 },
     { id: "media", label: "Media", show: allPhotos.length > 1 },
-    { id: "activity", label: "Dev Signal", show: !!leetcodeUsername },
     { id: "links", label: "Links", show: socialLinks.length > 0 || codingLinks.length > 0 || !!profile?.resumeURL },
-  ].filter((s) => s.show), [profile?.about, skillList.length, hobbies.length, likes.length, dislikes.length, allPhotos.length, socialLinks.length, codingLinks.length, profile?.resumeURL, leetcodeUsername]);
+  ].filter((s) => s.show), [profile?.about, skillList.length, hobbies.length, likes.length, dislikes.length, allPhotos.length, socialLinks.length, codingLinks.length, profile?.resumeURL]);
+
+  const activeLabel = useMemo(
+    () => SECTIONS.find((s) => s.id === activeSection)?.label || "",
+    [SECTIONS, activeSection],
+  );
+  const activeIdx = useMemo(
+    () => Math.max(0, SECTIONS.findIndex((s) => s.id === activeSection)) + 1,
+    [SECTIONS, activeSection],
+  );
 
   useEffect(() => {
     const onScroll = () => {
-      setScrollY(window.scrollY);
+      const y = window.scrollY;
+      setScrollY(y);
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - window.innerHeight;
+      setPageP(max > 0 ? Math.min(Math.max(y / max, 0), 1) : 0);
       let cur = SECTIONS[0]?.id || "about";
       for (const s of SECTIONS) {
         const el = document.getElementById(s.id);
@@ -318,10 +401,6 @@ const UserProfileView = () => {
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, [SECTIONS]);
-
-  const scrollToSection = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
 
   const sendRequest = async (status) => {
     setBusy(true);
@@ -396,32 +475,26 @@ const UserProfileView = () => {
           <button
             onClick={() => reviewRequest("accepted")}
             disabled={busy}
-            className="btn-accept group relative inline-flex items-center gap-2.5 rounded-2xl h-12 px-7 font-black text-xs uppercase tracking-wider text-white disabled:opacity-50 disabled:scale-100"
+            className="app-accept"
           >
-            <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-500" />
-            <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-300 to-teal-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <span className="relative flex items-center gap-2.5">
-              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white/25 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </span>
-              Accept
+            <span className="request-icon-wrap">
+              <svg className="request-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
             </span>
+            Accept
           </button>
           <button
             onClick={() => reviewRequest("rejected")}
             disabled={busy}
-            className="btn-decline group relative inline-flex items-center gap-2.5 rounded-2xl h-12 px-7 font-black text-xs uppercase tracking-wider border-2 border-rose-400/40 bg-rose-500/10 text-rose-200 disabled:opacity-50"
+            className="app-decline"
           >
-            <span className="relative flex items-center gap-2.5">
-              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-rose-500/30 group-hover:bg-rose-500/50 group-hover:rotate-90 transition-all duration-300">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </span>
-              Decline
+            <span className="request-icon-wrap">
+              <svg className="request-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </span>
+            Decline
           </button>
         </>
       );
@@ -489,82 +562,75 @@ const UserProfileView = () => {
     );
   }
 
-  const coverImg = resolveMediaUrl(profile.photoURL);
-  const filmPhotos = allPhotos.length > 1 ? [...allPhotos, ...allPhotos] : allPhotos;
   const hasJourney =
     profile.work?.company || profile.work?.role || profile.education?.college || profile.education?.degree;
 
   return (
     <div className="relative overflow-hidden pb-20">
-      <div className="aurora-blob w-96 h-96 bg-rose-500/[0.16] top-24 -left-32" />
-      <div className="aurora-blob w-80 h-80 bg-indigo-500/[0.14] top-[70rem] -right-28" style={{ animationDelay: "-7s" }} />
-      <div className="aurora-blob w-72 h-72 bg-fuchsia-500/[0.10] top-[140rem] left-1/4" style={{ animationDelay: "-14s" }} />
+      <CursorFollower />
+      <div className="dyn-bg" aria-hidden="true">
+        <span className="dyn-mesh" />
+        <span className="dyn-blob dyn-blob-rose" />
+        <span className="dyn-blob dyn-blob-indigo" />
+        <span className="dyn-blob dyn-blob-fuchsia" />
+        <span className="dyn-halo" />
+        <span className="dyn-grain" />
+      </div>
 
-      {/* scrollspy rail */}
-      <nav className="fixed right-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col items-end gap-4">
-        {SECTIONS.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => scrollToSection(s.id)}
-            className={`rail-btn flex items-center gap-2.5 ${activeSection === s.id ? "active" : ""}`}
-          >
-            <span className="rail-label text-[10px] font-black uppercase tracking-widest text-base-content/50">
-              {s.label}
+      {/* ══════════ APPLE-STYLE SECTION NAV ══════════ */}
+      <nav className={`app-nav${scrollY > 40 ? " app-nav--solid" : ""}`} aria-label="Profile sections">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 flex items-center gap-2.5">
+          <Magnetic strength={0.45} className="app-nav-back-wrap">
+            <button
+              onClick={() => navigate(-1)}
+              className="app-nav-back"
+              title="Go back"
+              aria-label="Go back"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          </Magnetic>
+          <span className="app-nav-name hidden sm:inline-flex">{profile.firstName}</span>
+          <div className="app-nav-track">
+            <span className="app-nav-track-meta">now</span>
+            <span key={activeSection} className="app-nav-track-label">{activeLabel}</span>
+            <span className="app-nav-track-bar">
+              <span className="app-nav-track-fill" style={{ transform: `scaleX(${pageP})` }} />
             </span>
-            <span className="rail-dot" />
-          </button>
-        ))}
+            <span className="app-nav-track-count">
+              <span key={activeSection} className="app-nav-track-count-cur">{activeIdx}</span>
+              <span className="app-nav-track-count-total">/{SECTIONS.length}</span>
+            </span>
+          </div>
+        </div>
       </nav>
 
-      {/* ══════════ CINEMATIC COVER HERO ══════════ */}
-      <section className="relative min-h-[78vh] flex flex-col justify-end overflow-hidden">
-        <div
-          className="cover-hero-media absolute inset-0"
-          style={{ transform: `translateY(${Math.min(scrollY * 0.16, 140)}px)` }}
-        >
-          <img
-            src={coverImg}
-            alt=""
-            className="w-full h-full object-cover scale-110 blur-[3px] brightness-[0.42]"
-            loading="eager"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#070912]/70 via-[#070912]/55 to-[#070912]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#070912]/60 via-transparent to-[#070912]/60" />
-        </div>
+      {/* ══════════ HERO ══════════ */}
+      <section className="relative min-h-[74vh] flex flex-col justify-end overflow-hidden">
         <span className="chat-orb absolute -top-24 left-1/4 w-80 h-80 rounded-full bg-primary/20 blur-3xl" />
         <span className="chat-orb absolute bottom-10 right-10 w-72 h-72 rounded-full bg-secondary/20 blur-3xl" style={{ animationDelay: "-6s" }} />
 
-        <div className="relative max-w-3xl mx-auto w-full text-center px-4 pt-14 pb-10">
-          <div className="profile-aura mx-auto fade-up">
-            <span className="aura-blob-a" />
-            <span className="aura-blob-b" style={{ animationDelay: "-3s" }} />
-            <span className="aura-ring inset-4" />
-            <span className="aura-ring aura-ring--rev -inset-3" />
-            <span className="aura-orbit" style={{ "--odur": "9s", "--odr": "112px", color: "#22d3ee" }}><i /></span>
-            <span className="aura-orbit" style={{ "--odur": "14s", "--odr": "104px", color: "#f472b6" }}><i /></span>
-            <span className="aura-orbit" style={{ "--odur": "19s", "--odr": "120px", color: "#fbbf24" }}><i /></span>
-            <span className="spark text-sm" style={{ top: "14%", left: "18%", animationDelay: "-0.5s" }}>✦</span>
-            <span className="spark text-[10px]" style={{ top: "22%", right: "12%", animationDelay: "-1.4s" }}>✦</span>
-            <span className="spark text-xs" style={{ bottom: "18%", left: "10%", animationDelay: "-2.2s" }}>✦</span>
-            <span className="spark text-[10px]" style={{ bottom: "24%", right: "16%", animationDelay: "-3s" }}>✦</span>
-
-            <div
-              className="avatar-bob relative cursor-pointer group/av"
+        <div className="relative max-w-4xl mx-auto w-full text-center px-4 sm:px-6 pt-14 pb-12">
+          <div className="app-avatar-stage mx-auto fade-up">
+            <span className="app-avatar-halo" aria-hidden="true" />
+            <button
+              type="button"
+              className="app-avatar group relative cursor-pointer"
               onClick={() => allPhotos.length > 0 && setViewerIndex(0)}
               title={allPhotos.length > 1 ? "Click to open photo archive" : "Click to view photo"}
             >
-              <div className="avatar-ring breath-glow rounded-full p-[3px]" style={{ "--bglow": "rgba(255,45,85,0.7)" }}>
-                <MediaImage
-                  src={profile.photoURL}
-                  alt={`${profile.firstName} ${profile.lastName || ""}`}
-                  className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover"
-                />
-              </div>
+              <MediaImage
+                src={profile.photoURL}
+                alt={`${profile.firstName} ${profile.lastName || ""}`}
+                className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover"
+              />
               <span
                 title="Online"
                 className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full bg-emerald-500 border-[3px] border-[#070912] shadow-[0_0_14px_rgba(16,185,129,0.85)]"
               />
-              <span className="absolute inset-0 rounded-full opacity-0 group-hover/av:opacity-100 transition-opacity duration-300 pointer-events-none flex items-center justify-center bg-black/30">
+              <span className="app-avatar-view">
                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 border border-white/20 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-sm">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
@@ -572,15 +638,15 @@ const UserProfileView = () => {
                   View
                 </span>
               </span>
-            </div>
+            </button>
           </div>
 
-          <h1 className="mt-5 text-4xl sm:text-5xl font-black tracking-tight text-shimmer fade-up" style={{ animationDelay: "80ms" }}>
-            {profile.firstName} <span className="font-light text-white/90">{profile.lastName}</span>
+          <h1 className="app-hero-name fade-up" style={{ animationDelay: "80ms" }}>
+            {profile.firstName} <span>{profile.lastName}</span>
           </h1>
 
           {headline && (
-            <p className="caret-blink mt-3 text-sm sm:text-base font-bold text-primary/90 fade-up" style={{ animationDelay: "140ms" }}>
+            <p className="app-hero-headline fade-up" style={{ animationDelay: "140ms" }}>
               {headline}
             </p>
           )}
@@ -622,90 +688,86 @@ const UserProfileView = () => {
         </div>
       </section>
 
-      {/* ══════════ HUD STATS STRIP ══════════ */}
-      <div className="relative z-10 max-w-4xl mx-auto px-4 -mt-4">
-        <div className="hud-rise premium-card rounded-3xl px-5 py-4 sm:px-8 grid grid-cols-4 gap-2 divide-x divide-white/5">
-          {/* AGE — live ring */}
-          <div className="hud-cell flex flex-col items-center justify-center gap-1.5 text-center py-1">
-            <span className="hud-scan" style={{ animationDelay: "-0.6s" }} />
-            <RingGauge pct={Math.min(ageNumber, 100)} color="#ff2d55" size={54} ringW={5}>
-              <span className="text-sm sm:text-base font-black text-white leading-none">
-                <CountUp to={ageNumber} />
-              </span>
-            </RingGauge>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.14em] text-base-content/50">
-              Age {zodiac ? `· ${zodiac.split(" ")[0]}` : ""}
-            </p>
+      {/* ══════════ STATS CARD ══════════ */}
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 -mt-5">
+        <div className="app-stats premium-card rounded-3xl">
+          <div className="app-stats-head">
+            <span className="app-stats-head-title">
+              <span className="app-stats-live" aria-hidden="true" />
+              <span className="app-stats-head-label">Profile Overview</span>
+            </span>
+            <span className="app-stats-head-meta">realtime</span>
           </div>
-
-          {/* EXPERIENCE — flowing energy bar */}
-          <div className="hud-cell flex flex-col items-center justify-center gap-1.5 text-center py-1">
-            <span className="hud-scan" style={{ animationDelay: "-1.6s" }} />
-            <p className="text-lg sm:text-2xl font-black text-white leading-none">
-              <CountUp to={profile.work?.experienceYears || 0} />
-              <span className="text-[10px] font-black text-emerald-400 align-top">+</span>
-              <span className="ml-1 text-[10px] font-black text-base-content/50 align-baseline">yrs</span>
-            </p>
-            <div className="w-16 h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-300 to-emerald-500 exp-flow"
-                style={{ "--bar-w": `${Math.min((profile.work?.experienceYears || 0) / 30, 1) * 100}%`, width: `${Math.min((profile.work?.experienceYears || 0) / 30, 1) * 100}%` }}
-              />
-            </div>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.14em] text-base-content/50">
-              Exp {level ? `· ${level}` : ""}
-            </p>
-          </div>
-
-          {/* SKILLS — popping dots */}
-          <div className="hud-cell flex flex-col items-center justify-center gap-1.5 text-center py-1">
-            <span className="hud-scan" style={{ animationDelay: "-2.6s" }} />
-            <p className="text-lg sm:text-2xl font-black text-white leading-none">
-              <CountUp to={skillList.length} />
-            </p>
-            <div className="flex items-center gap-1">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <span
-                  key={i}
-                  className={`dot-pop w-1.5 h-1.5 rounded-full ${i < Math.min(skillList.length, 5) ? "bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.9)]" : "bg-white/10"}`}
-                  style={{ animationDelay: `${i * 110}ms` }}
-                />
-              ))}
-            </div>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.14em] text-base-content/50">Skills</p>
-          </div>
-
-          {/* PHOTOS — pulsing camera */}
-          <div className="hud-cell flex flex-col items-center justify-center gap-1.5 text-center py-1">
-            <span className="hud-scan" style={{ animationDelay: "-3.2s" }} />
-            <p className="text-lg sm:text-2xl font-black text-white leading-none">
-              <CountUp to={allPhotos.length} />
-            </p>
-            <svg
-              className="cam-pulse w-4 h-4 text-primary"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9zm9 7a3 3 0 100-6 3 3 0 000 6z" />
-            </svg>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.14em] text-base-content/50">Photos</p>
+          <div className="app-stats-grid grid grid-cols-2 sm:grid-cols-4">
+            <StatCell
+              label="Age"
+              accent="#ff2d55"
+              sub={zodiac}
+              target={Math.min(1, ageNumber / 100)}
+              delay={0}
+              to={ageNumber}
+              icon={
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 2v4M16 2v4M3 9h18M5 5h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z" />
+                  <path d="M12 17a3 3 0 100-6 3 3 0 000 6z" />
+                </svg>
+              }
+            />
+            <StatCell
+              label="Experience"
+              accent="#22d3ee"
+              sub={level}
+              target={Math.min(1, (profile.work?.experienceYears || 0) / 50)}
+              delay={140}
+              to={profile.work?.experienceYears || 0}
+              unit={profile.work?.experienceYears > 0 ? "yrs" : undefined}
+              icon={
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="7" width="20" height="13" rx="2" />
+                  <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M16 12h.01M12 12h.01M8 12h.01" />
+                </svg>
+              }
+            />
+            <StatCell
+              label="Skills"
+              accent="#a78bfa"
+              target={Math.min(1, skillList.length / 40)}
+              delay={280}
+              to={skillList.length}
+              icon={
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 6l-6 6 6 6M16 6l6 6-6 6" />
+                </svg>
+              }
+            />
+            <StatCell
+              label="Photos"
+              accent="#fbbf24"
+              target={Math.min(1, allPhotos.length / 20)}
+              delay={420}
+              to={allPhotos.length}
+              icon={
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="M3 15l4.5-4.5a1 1 0 011.4 0L12 13.5M21 11l-2.5-2.5a1 1 0 00-1.4 0L15 10.5" />
+                  <circle cx="8.5" cy="8.5" r="1.3" />
+                </svg>
+              }
+            />
           </div>
         </div>
       </div>
 
       {/* ══════════ ABOUT ══════════ */}
       {profile.about && (
-        <section id="about" className="relative max-w-3xl mx-auto px-4 pt-16 scroll-mt-24">
+        <section id="about" className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 scroll-mt-20">
           <Reveal>
             <SectionHeader index={1} title="About" subtitle="Who they are, in their own words" />
-            <div className="premium-card rounded-3xl p-7 sm:p-9 relative overflow-hidden">
+            <div className="quote-card premium-card rounded-3xl p-7 sm:p-9 relative overflow-hidden">
               <span className="chat-orb absolute -top-16 -right-16 w-56 h-56 rounded-full bg-primary/10 blur-3xl" />
-              <span className="absolute top-6 left-7 font-serif text-7xl leading-none text-primary/25 select-none">"</span>
-              <p className="pl-2 text-base sm:text-lg text-base-content/85 leading-relaxed">{profile.about}</p>
+              <WordReveal text={profile.about} />
               <p className="mt-5 font-mono text-[10px] font-bold tracking-[0.3em] text-base-content/35">
-                ~ {profile.firstName} {profile.lastName || ""}
+                ~ <span className="quote-name">{profile.firstName} {profile.lastName || ""}</span>
               </p>
             </div>
           </Reveal>
@@ -714,7 +776,7 @@ const UserProfileView = () => {
 
       {/* ══════════ TECH CONSTELLATION ══════════ */}
       {skillList.length > 0 && (
-        <section id="tech" className="relative max-w-5xl mx-auto px-4 pt-16 scroll-mt-24">
+        <section id="tech" className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 scroll-mt-20">
           <Reveal>
             <SectionHeader index={2} title="Tech Constellation" subtitle="A live star map of their stack — slow orbits, twinkling nodes, passing comets" />
           </Reveal>
@@ -734,7 +796,7 @@ const UserProfileView = () => {
       )}
 
       {/* ══════════ JOURNEY TIMELINE ══════════ */}
-      <section id="journey" className="relative max-w-4xl mx-auto px-4 pt-16 scroll-mt-24">
+      <section id="journey" className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 scroll-mt-20">
         <Reveal>
           <SectionHeader index={3} title="The Journey" subtitle="Work & education across time" />
         </Reveal>
@@ -818,7 +880,7 @@ const UserProfileView = () => {
 
       {/* ══════════ VIBE ══════════ */}
       {(hobbies.length > 0 || likes.length > 0 || dislikes.length > 0) && (
-        <section id="vibe" className="relative max-w-5xl mx-auto px-4 pt-16 scroll-mt-24">
+        <section id="vibe" className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 scroll-mt-20">
           <Reveal>
             <SectionHeader index={4} title="The Vibe" subtitle="Hobbies, likes & dislikes — each with its own energy" />
           </Reveal>
@@ -898,79 +960,55 @@ const UserProfileView = () => {
         </section>
       )}
 
-      {/* ══════════ MEDIA FILM STRIP ══════════ */}
+      {/* ══════════ MEDIA GALLERY ══════════ */}
       {allPhotos.length > 1 && (
-        <section id="media" className="relative max-w-6xl mx-auto px-4 pt-16 scroll-mt-24">
+        <section id="media" className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 scroll-mt-20">
           <Reveal>
             <SectionHeader
               index={5}
-              title="Media Reel"
-              subtitle="Click any frame to open the archive"
+              title="Media Gallery"
+              subtitle="A living wall of moments — click any frame to open the archive"
             />
           </Reveal>
-          <Reveal variant="up">
-            <div className="film-mask overflow-hidden py-3">
-              <div className="animate-film flex gap-4 w-max">
-                {filmPhotos.map((p, i) => {
-                  const realIdx = i % allPhotos.length;
-                  const accent = PHOTO_ACCENTS[realIdx % PHOTO_ACCENTS.length];
-                  return (
-                    <button
-                      key={`f-${i}`}
-                      onClick={() => setViewerIndex(realIdx)}
-                      title="Click to view full photo"
-                      className="film-frame group/frame relative w-64 sm:w-72 shrink-0 block"
-                      style={{ "--frame-c": accent }}
-                    >
-                      <span className="sprocket-holes" />
-                      <span className="film-cell relative w-64 h-44 sm:w-72 sm:h-52 rounded-2xl overflow-hidden border border-white/10 block">
-                        <MediaImage src={p} alt={`Photo ${realIdx + 1}`} className="w-full h-full object-cover" />
-                        <span className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
-                        <span className="film-aura" />
-                        <span className="absolute bottom-0 inset-x-0 px-3 py-2 flex items-center justify-between">
-                          <p className="text-[10px] font-black text-white/90">{profile.firstName}'s moment</p>
-                          <span className="font-mono text-[8px] tracking-[0.2em] text-white/50">{String(realIdx + 1).padStart(2, "0")}</span>
-                        </span>
-                        <span className="film-view absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 group-hover/frame:opacity-100 transition-opacity duration-300 pointer-events-none">
-                          <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-black/55 border border-white/25 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-sm">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
-                            </svg>
-                            View
-                          </span>
-                        </span>
-                      </span>
-                      <span className="sprocket-holes" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </Reveal>
-        </section>
-      )}
-
-      {/* ══════════ DEV SIGNAL (LEETCODE HEATMAP) ══════════ */}
-      {leetcodeUsername && (
-        <section id="activity" className="relative max-w-4xl mx-auto px-4 pt-16 scroll-mt-24">
-          <Reveal>
-            <SectionHeader
-              index={6}
-              title="Dev Signal"
-              subtitle={`The daily grind behind ${profile.firstName}'s skill graph`}
-            />
-          </Reveal>
-          <Reveal variant="up">
-            <LeetCodeHeatmap userId={userId} username={leetcodeUsername} />
-          </Reveal>
+          <div ref={mediaRef} className={`gal-grid${mediaInView ? " gal-on" : ""}`}>
+            {allPhotos.map((p, i) => {
+              const accent = PHOTO_ACCENTS[i % PHOTO_ACCENTS.length];
+              return (
+                <button
+                  key={i}
+                  onClick={() => setViewerIndex(i)}
+                  title="Click to view full photo"
+                  className="gal-card group/gal relative block w-full text-left"
+                  style={{ "--gc": accent, "--d": `${(i % 6) * 90}ms` }}
+                >
+                  <MediaImage src={p} alt={`Photo ${i + 1}`} className="gal-img w-full h-full object-cover" />
+                  <span className="gal-aura" aria-hidden="true" />
+                  <span className="gal-scan" aria-hidden="true" />
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/0 to-black/0 pointer-events-none" />
+                  <span className="gal-meta absolute inset-x-0 bottom-0 p-3 flex items-center justify-between">
+                    <p className="text-[10px] font-black text-white/90">{profile.firstName}'s moment</p>
+                    <span className="font-mono text-[8px] tracking-[0.2em] text-white/60">{String(i + 1).padStart(2, "0")}</span>
+                  </span>
+                  <span className="gal-view absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover/gal:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-black/55 border border-white/25 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-sm">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+                      </svg>
+                      View
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </section>
       )}
 
       {/* ══════════ LINKS ══════════ */}
       {(socialLinks.length > 0 || codingLinks.length > 0 || profile.resumeURL) && (
-        <section id="links" className="relative max-w-4xl mx-auto px-4 pt-16 scroll-mt-24">
+        <section id="links" className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 scroll-mt-20">
           <Reveal>
-            <SectionHeader index={7} title="Connect Elsewhere" subtitle="Find them across the web" />
+            <SectionHeader index={6} title="Connect Elsewhere" subtitle="Find them across the web" />
           </Reveal>
           <div className="flex flex-wrap gap-2.5">
             {socialLinks.map((l, idx) => {
@@ -1033,7 +1071,7 @@ const UserProfileView = () => {
       )}
 
       {/* footer hint */}
-      <div className="relative max-w-4xl mx-auto px-4 mt-16 text-center">
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 mt-16 text-center">
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-slate-200 text-xs font-bold hover:bg-white/10 hover:scale-105 active:scale-95 transition-all"

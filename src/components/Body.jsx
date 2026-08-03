@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import NavBar from "./NavBar";
 import Footer from "./Footer";
 import MobileNav from "./MobileNav";
@@ -17,6 +17,8 @@ const Body = () => {
   const navigate = useNavigate();
   const userData = useSelector((store) => store.user);
   const [matchData, setMatchData] = useState(null);
+  const location = useLocation();
+  const standalone = location.pathname.startsWith("/user/");
 
   const fetchUser = async () => {
     if (userData) return;
@@ -75,14 +77,14 @@ const Body = () => {
         <div className="absolute -bottom-32 -left-20 w-[28rem] sm:w-[36rem] h-[28rem] sm:h-[36rem] rounded-full bg-gradient-to-tr from-amber-500/10 via-rose-500/10 to-transparent blur-[120px] pointer-events-none" />
         <div className="absolute inset-0 bg-mesh-pattern opacity-20 pointer-events-none" />
       </div>
-      <div className="relative z-10 flex flex-col min-h-screen pb-16 md:pb-0">
-        <NavBar />
+      <div className={`relative z-10 flex flex-col min-h-screen ${standalone ? "" : "pb-16 md:pb-0"}`}>
+        {!standalone && <NavBar />}
         <div className="flex-1">
           <Outlet />
         </div>
-        <Footer />
+        {!standalone && <Footer />}
       </div>
-      <MobileNav />
+      {!standalone && <MobileNav />}
       <NotificationToast />
       <MatchOverlay
         matchData={userData ? matchData : null}
