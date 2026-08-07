@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { MembershipBadge, getCardGlowStyle } from "../utils/membershipUtils";
 import { resolveMediaUrl, getProfileLink } from "../utils/constants";
 import { getSkillStyle } from "../utils/skillStyles";
@@ -32,8 +31,33 @@ const HeartParticle = () => {
   );
 };
 
-const UserCard = ({ user, onSwipe, preview = false }) => {
-  const navigate = useNavigate();
+const StarParticle = () => {
+  const style = {
+    left: `${10 + Math.random() * 80}%`,
+    width: `${10 + Math.random() * 18}px`,
+    height: `${10 + Math.random() * 18}px`,
+    animationDelay: `${Math.random() * 0.3}s`,
+    animationDuration: `${0.9 + Math.random() * 0.6}s`,
+    color: ["#fbbf24", "#f59e0b", "#fcd34d", "#f97316", "#fff7ed"][Math.floor(Math.random() * 5)],
+  };
+  return (
+    <span className="heart-particle" style={style}>
+      <svg viewBox="0 0 20 20" fill="currentColor" className="w-full h-full">
+        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+      </svg>
+    </span>
+  );
+};
+
+const UserCard = ({
+  user,
+  onSwipe,
+  preview = false,
+  superLikesRemaining = null,
+  isViewerPremium = false,
+  onSuperConnect = null,
+  onSuperExit = null,
+}) => {
   if (!user) return null;
   const { firstName, lastName, photoURL, photos, age, gender, about, skills, membershipType, isPremium, location, isStudent, education, work, codingProfiles, github, linkedin, portfolio, resumeURL } = user;
 
@@ -80,7 +104,9 @@ const UserCard = ({ user, onSwipe, preview = false }) => {
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [swipeDir, setSwipeDir] = useState(null);
   const [showHearts, setShowHearts] = useState(false);
+  const [superBurst, setSuperBurst] = useState(false);
   const [photoIdx, setPhotoIdx] = useState(0);
+  const [superPending, setSuperPending] = useState(false);
 
   const allPhotos = [];
   if (photoURL) allPhotos.push(photoURL);
@@ -184,6 +210,31 @@ const UserCard = ({ user, onSwipe, preview = false }) => {
     }, 380);
   };
 
+  const handleSuperConnectClick = async () => {
+    if (preview || isExiting.current || superPending) return;
+    if (!onSuperConnect) {
+      handleButtonSwipe("right");
+      return;
+    }
+    setSuperPending(true);
+    try {
+      const ok = await onSuperConnect(user);
+      if (!ok) return;
+      isExiting.current = true;
+      setSwipeDir("right");
+      setShowHearts(true);
+      setSuperBurst(true);
+      animateTo(700, 0, "transform 0.35s ease-in, opacity 0.3s ease-in", 0);
+      setTimeout(() => {
+        if (mountedRef.current && onSuperExit) onSuperExit(user._id);
+      }, 380);
+    } catch (err) {
+      console.error("Super connect error:", err);
+    } finally {
+      setSuperPending(false);
+    }
+  };
+
   const dirIndicator = pos.x > 50 ? "right" : pos.x < -50 ? "left" : null;
   const dirOpacity = Math.min(1, Math.abs(pos.x) / 150);
 
@@ -222,6 +273,13 @@ const UserCard = ({ user, onSwipe, preview = false }) => {
         <div className="absolute inset-0 z-50 pointer-events-none overflow-hidden">
           {Array.from({ length: 14 }, (_, i) => (
             <HeartParticle key={i} />
+          ))}
+        </div>
+      )}
+      {superBurst && (
+        <div className="absolute inset-0 z-50 pointer-events-none overflow-hidden">
+          {Array.from({ length: 18 }, (_, i) => (
+            <StarParticle key={i} />
           ))}
         </div>
       )}
@@ -275,31 +333,20 @@ const UserCard = ({ user, onSwipe, preview = false }) => {
         )}
         <div className="absolute top-4 left-4 right-4 flex items-start justify-between pointer-events-none">
           <div className="flex items-center gap-1.5">
-            <span className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md text-[10px] font-black uppercase tracking-wider text-white px-3 py-1.5 rounded-full border border-white/10">
-              <span className="w-2 h-2 rounded-full bg-accent animate-pulse flex-shrink-0" />
-              Available
-            </span>
+            {user.starredYou && (
+              <span
+                title="This developer super connected with your profile"
+                className="flex items-center gap-1.5 bg-amber-400/25 backdrop-blur-md text-amber-300 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border border-amber-400/60 animate-pulse shadow-lg shadow-amber-500/20"
+              >
+                <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                Starred You
+              </span>
+            )}
             <MembershipBadge membershipType={membershipType} isPremium={isPremium} size="sm" />
           </div>
           <div className="flex flex-col items-end gap-1.5">
-            <button
-              type="button"
-              title="View full profile"
-              aria-label="View full profile"
-              onMouseDown={(e) => e.stopPropagation()}
-              onTouchStart={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/user/${user._id}`);
-              }}
-              className="group/prof inline-flex items-center gap-1.5 bg-black/50 backdrop-blur-md border border-primary/40 text-primary text-[11px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full hover:bg-primary hover:text-white hover:scale-105 active:scale-95 shadow-lg shadow-primary/20 transition-all duration-200"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              Profile
-            </button>
             {totalPhotos > 1 && (
               <span
                 title={`Photo ${currentIdx + 1} of ${totalPhotos}`}
@@ -312,8 +359,16 @@ const UserCard = ({ user, onSwipe, preview = false }) => {
               </span>
             )}
             {age && (
-              <span className="bg-black/50 backdrop-blur-md text-white text-xs font-black px-3 py-1.5 rounded-full border border-white/10">
-                {age}
+              <span
+                title={`${age} years old`}
+                className="flex items-center gap-1.5 rounded-full p-[1.5px] bg-gradient-to-br from-rose-400 via-fuchsia-500 to-amber-400 shadow-[0_0_16px_rgba(244,114,182,0.45)]"
+              >
+                <span className="flex items-center gap-1.5 bg-[#0d0a18]/90 backdrop-blur-md rounded-full pl-2.5 pr-3 py-1.5 text-white text-xs font-black leading-none">
+                  <svg className="w-3.5 h-3.5 text-rose-300" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                  </svg>
+                  {age}
+                </span>
               </span>
             )}
           </div>
@@ -366,10 +421,25 @@ const UserCard = ({ user, onSwipe, preview = false }) => {
                 </p>
               )}
             </div>
-            <div className="flex flex-col items-center bg-black/50 backdrop-blur-md rounded-2xl px-3 py-2 border border-white/10">
-              <span className="text-[10px] text-white/60 font-bold uppercase tracking-widest leading-none">Match</span>
-              <span className="text-lg font-black text-primary leading-none mt-0.5">92%</span>
-            </div>
+            {(isViewerPremium || superLikesRemaining !== null) && (
+              <div className="flex flex-col items-center bg-black/50 backdrop-blur-md rounded-2xl px-3 py-2 border border-amber-400/40 shadow-[0_0_18px_rgba(251,191,36,0.3)]">
+                <span className="flex items-center gap-1 text-[9px] text-amber-200/80 font-black uppercase tracking-widest leading-none">
+                  <svg className="w-2.5 h-2.5 fill-current text-amber-300" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                  Super
+                </span>
+                <span
+                  className={`text-lg font-black leading-none mt-1 ${
+                    isViewerPremium || superLikesRemaining > 0
+                      ? "text-amber-300"
+                      : "text-white/40"
+                  }`}
+                >
+                  {isViewerPremium ? "∞" : superLikesRemaining}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </figure>
@@ -464,13 +534,15 @@ const UserCard = ({ user, onSwipe, preview = false }) => {
           <button
             onClick={() => handleButtonSwipe("left")}
             title="Pass (← Arrow Key)"
-            className="flex-1 flex items-center justify-center gap-2 h-12 px-4 py-3 rounded-2xl
-                       border-2 border-base-300 text-base-content/60 font-black text-xs uppercase tracking-wider
-                       hover:border-error/60 hover:bg-error/8 hover:text-error
-                       active:scale-95 transition-all duration-200 group/pass"
+            className="group/pass relative flex-1 flex items-center justify-center gap-2 h-12 px-4 py-3 rounded-2xl overflow-hidden
+                       bg-gradient-to-r from-rose-600 to-red-500 text-white
+                       font-black text-xs uppercase tracking-wider shadow-lg shadow-rose-600/30
+                       hover:shadow-rose-600/50 hover:scale-[1.03] active:scale-95
+                       transition-all duration-200 border-none"
           >
-            <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center
-                            group-hover/pass:bg-error group-hover/pass:border-error group-hover/pass:text-white
+            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent group-hover/pass:translate-x-full transition-transform duration-700" />
+            <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center
+                            group-hover/pass:bg-white/25 group-hover/pass:scale-110
                             transition-all duration-200">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
@@ -479,19 +551,32 @@ const UserCard = ({ user, onSwipe, preview = false }) => {
             Pass
           </button>
           <button
-            onClick={() => handleButtonSwipe("right")}
-            title="Super Connect"
-            className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500
-                       text-white flex items-center justify-center shadow-lg shadow-amber-500/30
-                       hover:scale-110 hover:shadow-amber-500/50 active:scale-95
-                       transition-all duration-200 border-2 border-amber-300/50 flex-shrink-0"
+            onClick={handleSuperConnectClick}
+            disabled={!isViewerPremium && superLikesRemaining === 0}
+            title={
+              isViewerPremium
+                ? "Super Connect — Unlimited (premium)"
+                : superLikesRemaining > 0
+                  ? `Super Connect (${superLikesRemaining} left today)`
+                  : "Super Connect — Daily limit reached. Go premium for unlimited!"
+            }
+            className={`relative w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+              superPending ? "opacity-60 pointer-events-none" : ""
+            } ${
+              !isViewerPremium && superLikesRemaining === 0
+                ? "bg-gradient-to-br from-base-400 to-base-500 text-base-content/40 border-2 border-base-600/50 cursor-not-allowed"
+                : "bg-gradient-to-br from-amber-400 to-orange-500 text-white border-2 border-amber-300/50 shadow-lg shadow-amber-500/30 hover:scale-110 hover:shadow-amber-500/50 active:scale-95"
+            }`}
           >
-            <svg className="w-5 h-5 fill-current animate-heartbeat" viewBox="0 0 20 20">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0
-                1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54
-                1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1
-                1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
+            {!isViewerPremium && superLikesRemaining === 0 ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 fill-current animate-heartbeat" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            )}
           </button>
           <button
             onClick={() => handleButtonSwipe("right")}

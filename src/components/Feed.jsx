@@ -6,11 +6,22 @@ import axios from "axios";
 import UserCard from "./UserCard";
 import FeedBackground from "./FeedBackground";
 import { Link } from "react-router-dom";
+import { createSocketConnection } from "../utils/socket";
 
 const Feed = () => {
   const dispatch = useDispatch();
   const feed = useSelector((store) => store.feed);
   const [loading, setLoading] = useState(true);
+  const [superLikesRemaining, setSuperLikesRemaining] = useState(null);
+  const [isViewerPremium, setIsViewerPremium] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+  const [toastVisible, setToastVisible] = useState(false);
+
+  const showToast = useCallback((msg) => {
+    setToastMsg(msg);
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 3500);
+  }, []);
 
   const getFeed = async () => {
     setLoading(true);
@@ -27,6 +38,76 @@ const Feed = () => {
   useEffect(() => {
     getFeed();
   }, []);
+
+  // Live refresh: when someone super connects with me, re-pull the feed
+  // so their card appears at the top with the "Starred You" badge.
+  useEffect(() => {
+    const s = createSocketConnection();
+    const onNotification = (data) => {
+      if (!data || data.type !== "superlike") return;
+      axios
+        .get(BASE_URL + "feed", { withCredentials: true })
+        .then((res) => dispatch(addFeed(res.data)))
+        .catch((err) => console.error("Error refreshing feed:", err));
+    };
+    s.on("notification:new", onNotification);
+    return () => s.off("notification:new", onNotification);
+  }, [dispatch]);
+
+  const getSuperLikeStatus = useCallback(async () => {
+    try {
+      const res = await axios.get(BASE_URL + "request/superlike/status", {
+        withCredentials: true,
+      });
+      setSuperLikesRemaining(
+        res.data?.remaining !== undefined && res.data?.remaining !== null
+          ? res.data.remaining
+          : null
+      );
+      setIsViewerPremium(Boolean(res.data?.isPremium));
+    } catch (err) {
+      console.error("Error fetching super connect status:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    getSuperLikeStatus();
+  }, [getSuperLikeStatus]);
+
+  const handleSuperConnect = useCallback(async (targetUser) => {
+    if (!targetUser) return false;
+    try {
+      const res = await axios.post(
+        `${BASE_URL}request/superlike/${targetUser._id}`,
+        {},
+        { withCredentials: true }
+      );
+      if (res.data && typeof res.data.remaining === "number") {
+        setSuperLikesRemaining(res.data.remaining);
+      }
+      showToast(
+        `⭐ Super connect sent to ${targetUser.firstName}! They'll see you at the top of their feed.`
+      );
+      return true;
+    } catch (err) {
+      const status = err.response?.status;
+      if (status === 403) {
+        setSuperLikesRemaining(0);
+      } else if (status === 400) {
+        return true;
+      } else {
+        console.error("Super connect error:", err);
+      }
+      return false;
+    }
+  }, []);
+
+  const handleSuperExit = useCallback(
+    (userId) => {
+      dispatch(removeUserFromFeed(userId));
+    },
+    [dispatch]
+  );
 
   const handleSwipe = useCallback(
     async (dir) => {
@@ -167,9 +248,29 @@ const Feed = () => {
         )}
 
         <div className="w-full z-10 animate-slide-up" key={currentDev._id}>
-          <UserCard user={currentDev} onSwipe={handleSwipe} />
+          <UserCard
+            user={currentDev}
+            onSwipe={handleSwipe}
+            superLikesRemaining={superLikesRemaining}
+            isViewerPremium={isViewerPremium}
+            onSuperConnect={handleSuperConnect}
+            onSuperExit={handleSuperExit}
+          />
         </div>
       </div>
+
+      {toastVisible && (
+        <div className="fixed top-24 right-4 sm:right-6 z-[99] max-w-xs">
+          <div className="rounded-2xl border border-amber-400/40 bg-[#0d101c]/95 shadow-2xl shadow-amber-500/20 px-4 py-3 text-sm text-white font-bold flex items-center gap-2.5 animate-slide-up">
+            <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/40">
+              <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </span>
+            {toastMsg}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

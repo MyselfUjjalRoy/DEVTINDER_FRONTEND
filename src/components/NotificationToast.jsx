@@ -18,6 +18,8 @@ const getToastMeta = (type) => {
       return { emoji: "😕", tint: "border-red-500/50" };
     case "message":
       return { emoji: "💬", tint: "border-violet-500/50" };
+    case "superlike":
+      return { emoji: "⭐", tint: "border-amber-500/50" };
     default:
       return { emoji: "🔔", tint: "border-slate-500/50" };
   }
