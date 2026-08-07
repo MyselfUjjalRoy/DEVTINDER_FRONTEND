@@ -267,6 +267,39 @@ const MOCK_LINKS = [
   },
 ];
 
+const SectionLabel = ({ children }) => (
+  <div className="relative flex flex-col items-center mb-5">
+    <div className="relative flex items-center justify-center gap-3 sm:gap-5">
+      {/* soft ambient glow behind the pill */}
+      <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[130%] h-[180%] bg-gradient-to-r from-rose-500/35 via-purple-500/35 to-cyan-400/35 blur-2xl rounded-full animate-pulse-glow pointer-events-none"></span>
+
+      {/* left connector line */}
+      <span className="hidden sm:block w-10 md:w-16 h-px bg-gradient-to-r from-transparent to-primary/60"></span>
+
+      {/* gradient-bordered pill */}
+      <h2 className="relative inline-flex rounded-full p-[1.5px] bg-[linear-gradient(120deg,rgba(251,113,133,0.9),rgba(167,139,250,0.9),rgba(34,211,238,0.9))] shadow-[0_0_30px_-6px_rgba(244,114,182,0.6)]">
+        <span className="relative inline-flex items-center gap-2.5 sm:gap-3 px-5 sm:px-7 py-2.5 rounded-full bg-base-950/90">
+          <svg className="w-4 h-4 text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.7)]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2l2.1 6.4 6.4 2.1-6.4 2.1L12 19l-2.1-6.4L3.5 10.5l6.4-2.1L12 2z" />
+          </svg>
+          <span className="text-sm sm:text-lg font-black uppercase tracking-[0.15em] bg-gradient-to-r from-rose-400 via-pink-400 to-purple-400 bg-clip-text text-transparent whitespace-nowrap">
+            {children}
+          </span>
+          <svg className="w-4 h-4 text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.7)]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2l2.1 6.4 6.4 2.1-6.4 2.1L12 19l-2.1-6.4L3.5 10.5l6.4-2.1L12 2z" />
+          </svg>
+        </span>
+      </h2>
+
+      {/* right connector line */}
+      <span className="hidden sm:block w-10 md:w-16 h-px bg-gradient-to-l from-transparent to-primary/60"></span>
+    </div>
+
+    {/* animated gradient underline */}
+    <span className="mt-3 h-[3px] w-24 sm:w-32 rounded-full bg-gradient-to-r from-rose-500 via-purple-500 to-cyan-400 shadow-[0_0_14px_rgba(244,114,182,0.6)]"></span>
+  </div>
+);
+
 const CountStat = ({ end, suffix = "", decimals = 0, label, gradient }) => {
   const value = useCountUp(end);
   return (
@@ -347,7 +380,7 @@ const Landing = () => {
       <div ref={gridRef} className="grid-floor hidden lg:block"></div>
 
       {/* ════════════ HERO ════════════ */}
-      <section className="relative max-w-7xl mx-auto px-4 pt-20 pb-24 sm:px-6 lg:px-8 text-center flex flex-col items-center">
+      <section className="relative max-w-7xl mx-auto px-4 pt-20 pb-16 sm:px-6 lg:px-8 text-center flex flex-col items-center">
         {/* rising code glyphs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden hidden md:block" aria-hidden="true">
           {GLYPHS.map((g, i) => (
@@ -437,13 +470,9 @@ const Landing = () => {
 
         {/* Live Interactive Deck Card Mockup — mirrors the real feed card */}
         <Reveal className="w-full">
-        <div className="relative w-full max-w-md mx-auto mt-16">
+        <div className="relative w-full max-w-sm mx-auto mt-10">
           {/* ambient glow */}
           <div className="absolute inset-x-8 inset-y-4 bg-gradient-to-tr from-primary/40 via-secondary/30 to-accent/40 rounded-3xl blur-2xl pointer-events-none animate-pulse-glow"></div>
-
-          {/* stacked deck peeks */}
-          <div className="absolute inset-x-8 top-3 h-[calc(100%-20px)] rounded-3xl bg-gradient-to-tr from-rose-500/20 to-purple-500/20 border border-white/10 -rotate-2"></div>
-          <div className="absolute inset-x-4 top-1.5 h-[calc(100%-14px)] rounded-3xl bg-white/5 border border-white/10 -rotate-1"></div>
 
           {/* floating hearts */}
           <div className="float-heart text-rose-500 text-lg" style={{ left: "4%", animationDuration: "3s", animationDelay: "-0.5s" }}>♥</div>
@@ -493,7 +522,7 @@ const Landing = () => {
               <div className="glass-card text-left rounded-[1.75rem] shadow-2xl overflow-hidden border border-white/15 relative">
                 <div ref={glareRef} className="glare-overlay" style={{ borderRadius: "0" }}></div>
 
-                <figure className="relative h-[22rem] w-full overflow-hidden bg-base-900">
+                <figure className="relative h-[14rem] sm:h-[16rem] w-full overflow-hidden bg-base-900">
                   <img
                     src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80"
                     alt="Sarah Jenkins Developer"
@@ -530,7 +559,7 @@ const Landing = () => {
                   <div className="absolute bottom-4 left-5 right-5 pointer-events-none">
                     <div className="flex items-end justify-between">
                       <div>
-                        <h3 className="text-[1.75rem] font-black text-white leading-tight tracking-tight drop-shadow-lg">
+                        <h3 className="text-2xl font-black text-white leading-tight tracking-tight drop-shadow-lg">
                           Sarah <span className="font-light">Jenkins</span>
                         </h3>
                         <p className="text-xs font-bold text-white/70 uppercase tracking-[0.15em] mt-0.5 flex items-center gap-1.5">
@@ -565,7 +594,7 @@ const Landing = () => {
                   </div>
                 </figure>
 
-                <div className="px-5 pt-4 pb-5 space-y-4">
+                <div className="px-4 pt-3 pb-4 space-y-3">
                   <p className="text-sm text-base-content/80 line-clamp-2 leading-relaxed tracking-[-0.01em]">
                     Full-stack engineer specializing in TypeScript and Node.js. I love clean architecture, contributing to open source, and pairing up on ambitious side projects that actually ship.
                   </p>
@@ -626,7 +655,7 @@ const Landing = () => {
                   <div className="flex items-center justify-between gap-3">
                     <button
                       type="button"
-                      className="flex-1 flex items-center justify-center gap-2 h-12 px-4 py-3 rounded-2xl border-2 border-base-300 text-base-content/60 font-black text-xs uppercase tracking-wider hover:border-error/60 hover:bg-error/8 hover:text-error active:scale-95 transition-all duration-200"
+                      className="flex-1 flex items-center justify-center gap-2 h-11 px-4 py-3 rounded-2xl border-2 border-base-300 text-base-content/60 font-black text-xs uppercase tracking-wider hover:border-error/60 hover:bg-error/8 hover:text-error active:scale-95 transition-all duration-200"
                     >
                       <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -645,7 +674,7 @@ const Landing = () => {
                     </button>
                     <button
                       type="button"
-                      className="flex-1 flex items-center justify-center gap-2 h-12 px-4 py-3 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.03] active:scale-95 transition-all duration-200 border-none"
+                      className="flex-1 flex items-center justify-center gap-2 h-11 px-4 py-3 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.03] active:scale-95 transition-all duration-200 border-none"
                     >
                       Connect
                       <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
@@ -678,15 +707,13 @@ const Landing = () => {
       </section>
 
       {/* ════════════ CODE WORD CONSTELLATION ════════════ */}
-      <section className="relative border-y border-white/5 bg-base-900/40 py-16 overflow-hidden">
+      <section className="relative border-y border-white/5 bg-base-900/40 py-12 overflow-hidden">
         <div className="absolute -top-20 -left-24 w-72 h-72 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-20 -right-24 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Reveal>
-            <p className="text-[10px] sm:text-xs uppercase font-extrabold tracking-[0.3em] text-primary mb-10">
-              Find your flow on DevTinder
-            </p>
+            <SectionLabel>Find your flow on DevTinder</SectionLabel>
           </Reveal>
 
           <Reveal delay={120}>
@@ -727,7 +754,7 @@ const Landing = () => {
           </Reveal>
 
           <Reveal delay={220}>
-            <p className="text-sm sm:text-base text-base-content/70 max-w-xl mx-auto mt-10 leading-relaxed">
+            <p className="text-sm sm:text-base text-base-content/70 max-w-xl mx-auto mt-8 leading-relaxed">
               Seven ways the community levels up together — from your first match to your final ship.
             </p>
           </Reveal>
@@ -735,7 +762,7 @@ const Landing = () => {
       </section>
 
       {/* ════════════ STATS ════════════ */}
-      <section className="relative border-t border-white/5 bg-base-900/40 py-20">
+      <section className="relative border-t border-white/5 bg-base-900/40 py-14">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <Reveal>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -748,10 +775,10 @@ const Landing = () => {
       </section>
 
       {/* ════════════ HOW IT WORKS ════════════ */}
-      <section id="how" className="relative py-24 scroll-mt-20">
+      <section id="how" className="relative py-16 scroll-mt-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Reveal className="text-center mb-16">
-            <h2 className="text-xs uppercase font-extrabold tracking-widest text-primary">How it Works</h2>
+          <Reveal className="text-center mb-12">
+            <SectionLabel>How it Works</SectionLabel>
             <h3 className="text-3xl sm:text-5xl font-black text-white tracking-tight mt-2">
               Three steps to your{" "}
               <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient">
@@ -787,10 +814,10 @@ const Landing = () => {
       </section>
 
       {/* ════════════ FEATURES ════════════ */}
-      <section id="features" className="relative border-t border-white/5 bg-base-900/40 py-24 scroll-mt-20">
+      <section id="features" className="relative border-t border-white/5 bg-base-900/40 py-16 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Reveal className="text-center mb-16">
-            <h2 className="text-xs uppercase font-extrabold tracking-widest text-primary">Why DevTinder?</h2>
+          <Reveal className="text-center mb-12">
+            <SectionLabel>Why DevTinder?</SectionLabel>
             <h3 className="text-3xl sm:text-5xl font-black text-white tracking-tight mt-2">
               Designed Exclusively for{" "}
               <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient">
@@ -819,10 +846,10 @@ const Landing = () => {
       </section>
 
       {/* ════════════ PRICING ════════════ */}
-      <section id="pricing" className="relative border-t border-white/5 bg-base-900/40 py-24 scroll-mt-20">
+      <section id="pricing" className="relative border-t border-white/5 bg-base-900/40 py-16 scroll-mt-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Reveal className="text-center mb-16">
-            <h2 className="text-xs uppercase font-extrabold tracking-widest text-primary">Pricing</h2>
+          <Reveal className="text-center mb-12">
+            <SectionLabel>Pricing</SectionLabel>
             <h3 className="text-3xl sm:text-5xl font-black text-white tracking-tight mt-2">
               Pick your{" "}
               <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient">

@@ -302,10 +302,6 @@ const Connections = () => {
                           {unread > 99 ? "99+" : unread}
                         </span>
                       )}
-                      <span
-                        title="Online"
-                        className="absolute -bottom-1 -left-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-[3px] border-[#10121e] shadow-[0_0_10px_rgba(16,185,129,0.6)]"
-                      />
                     </div>
 
                     <div className="min-w-0 flex-1">

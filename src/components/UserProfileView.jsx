@@ -12,7 +12,6 @@ import { MembershipBadge } from "../utils/membershipUtils";
 import MediaImage from "./MediaImage";
 import ConstellationCanvas from "./ConstellationCanvas";
 import PhotoViewer from "./PhotoViewer";
-import CursorFollower from "./CursorFollower";
 import Magnetic from "./Magnetic";
 import TiltCard from "./TiltCard";
 import CharReveal from "./CharReveal";
@@ -202,23 +201,38 @@ const Reveal = ({ children, className = "", variant = "up", delay = 0 }) => {
   );
 };
 
-const SectionHeader = ({ index, title, subtitle }) => (
-  <div className="app-sec-head">
-    <p className="app-eyebrow">
-      0{index} · {title.toLowerCase().replace(/\s+/g, "_")}
-    </p>
-    <h2 className="app-sec-title">{title}</h2>
-    {subtitle && <p className="app-sec-sub">{subtitle}</p>}
-  </div>
-);
+const RAIL_COLORS = ["#fbbf24", "#fb7185", "#e879f9", "#c084fc", "#22d3ee", "#34d399"];
+
+const HEADING_THEMES = {
+  1: ["#ff2d55", "#f472b6"],
+  2: ["#a78bfa", "#22d3ee"],
+  3: ["#34d399", "#22d3ee"],
+  4: ["#fbbf24", "#ff2d55"],
+  5: ["#22d3ee", "#a78bfa"],
+  6: ["#bf5af2", "#ff2d55"],
+};
+
+const SectionHeader = ({ index, title, subtitle }) => {
+  const theme = HEADING_THEMES[index] || HEADING_THEMES[1];
+  return (
+    <div className="app-sec-head" style={{ "--h1": theme[0], "--h2": theme[1] }}>
+      <div className="app-sec-head-row">
+        <span className="app-sec-index">0{index}</span>
+        <span className="app-sec-line" aria-hidden="true" />
+      </div>
+      <h2 className="app-sec-title">{title}</h2>
+      {subtitle && <p className="app-sec-sub">{subtitle}</p>}
+    </div>
+  );
+};
 
 const JourneyCard = ({ side, color, shadow, icon, tint, title, subtitle, badge, children }) => {
   const left = side === "left";
   return (
     <Reveal variant={left ? "left" : "right"} className={`relative md:w-1/2 pl-12 ${left ? "md:pr-12 md:mr-auto" : "md:pl-12 md:ml-auto"}`}>
       <span
-        className={`absolute top-5 w-4 h-4 rounded-full border-[3px] border-[#0b0e19] z-10 ${color} left-[1.05rem] ${
-          left ? "md:left-auto md:-right-2" : "md:-left-2"
+        className={`absolute top-5 w-4 h-4 rounded-full border-[3px] border-[#0b0e19] z-10 ${color} left-[1.25rem] -translate-x-1/2 ${
+          left ? "md:left-auto md:-right-2 md:translate-x-0" : "md:-left-2 md:translate-x-0"
         }`}
         style={{ boxShadow: shadow }}
       />
@@ -250,9 +264,12 @@ const UserProfileView = () => {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [activeSection, setActiveSection] = useState("about");
-  const [scrollY, setScrollY] = useState(0);
-  const [pageP, setPageP] = useState(0);
+  const [navSolid, setNavSolid] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(null);
+  const pagePRef = useRef(0);
+  const railElRef = useRef(null);
+  const railFillRef = useRef(null);
+  const railCometRef = useRef(null);
   const mediaRef = useRef(null);
   const mediaInView = useInView(mediaRef);
 
@@ -307,22 +324,13 @@ const UserProfileView = () => {
     return 0;
   }, [profile]);
 
-  const headline = useMemo(() => {
-    if (!profile) return null;
-    if (profile.isStudent) {
-      if (profile.education?.degree) return profile.education.degree;
-      if (profile.work?.role)
-        return profile.work.company
-          ? `${profile.work.role} @ ${profile.work.company}`
-          : profile.work.role;
-      return null;
-    }
-    if (profile.work?.role)
-      return profile.work.company
-        ? `${profile.work.role} @ ${profile.work.company}`
-        : profile.work.role;
-    if (profile.education?.degree) return profile.education.degree;
-    return null;
+  const career = useMemo(() => {
+    if (!profile) return { role: null, company: null, degree: null };
+    return {
+      role: profile.work?.role || null,
+      company: profile.work?.company || null,
+      degree: profile.education?.degree || null,
+    };
   }, [profile]);
 
   const locationText = useMemo(
@@ -371,36 +379,79 @@ const UserProfileView = () => {
     { id: "journey", label: "Journey", show: true },
     { id: "vibe", label: "Vibe", show: hobbies.length > 0 || likes.length > 0 || dislikes.length > 0 },
     { id: "media", label: "Media", show: allPhotos.length > 1 },
-    { id: "links", label: "Links", show: socialLinks.length > 0 || codingLinks.length > 0 || !!profile?.resumeURL },
+    { id: "links", label: "Links", show: socialLinks.length > 0 || codingLinks.length > 0 },
   ].filter((s) => s.show), [profile?.about, skillList.length, hobbies.length, likes.length, dislikes.length, allPhotos.length, socialLinks.length, codingLinks.length, profile?.resumeURL]);
 
-  const activeLabel = useMemo(
-    () => SECTIONS.find((s) => s.id === activeSection)?.label || "",
-    [SECTIONS, activeSection],
-  );
-  const activeIdx = useMemo(
-    () => Math.max(0, SECTIONS.findIndex((s) => s.id === activeSection)) + 1,
-    [SECTIONS, activeSection],
-  );
-
   useEffect(() => {
+    let ticking = false;
     const onScroll = () => {
-      const y = window.scrollY;
-      setScrollY(y);
-      const doc = document.documentElement;
-      const max = doc.scrollHeight - window.innerHeight;
-      setPageP(max > 0 ? Math.min(Math.max(y / max, 0), 1) : 0);
-      let cur = SECTIONS[0]?.id || "about";
-      for (const s of SECTIONS) {
-        const el = document.getElementById(s.id);
-        if (el && el.getBoundingClientRect().top <= 140) cur = s.id;
-      }
-      setActiveSection(cur);
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const solid = y > 40;
+        setNavSolid((prev) => (prev === solid ? prev : solid));
+        const doc = document.documentElement;
+        const max = doc.scrollHeight - window.innerHeight;
+        pagePRef.current = max > 0 ? Math.min(Math.max(y / max, 0), 1) : 0;
+
+        const bandTop = 100;
+        const bandBottom = window.innerHeight;
+        let bestId = SECTIONS[0]?.id || "about";
+        let bestOverlap = -1;
+        for (const s of SECTIONS) {
+          const el = document.getElementById(s.id);
+          if (!el) continue;
+          const r = el.getBoundingClientRect();
+          const top = Math.max(r.top, bandTop);
+          const bottom = Math.min(r.bottom, bandBottom);
+          const overlap = Math.max(0, bottom - top);
+          if (overlap > bestOverlap) {
+            bestOverlap = overlap;
+            bestId = s.id;
+          }
+        }
+        if (max > 0 && y >= max - 2) {
+          bestId = SECTIONS[SECTIONS.length - 1]?.id || bestId;
+        }
+        setActiveSection(bestId);
+        ticking = false;
+      });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, [SECTIONS]);
+
+  useEffect(() => {
+    let raf;
+    let last = performance.now();
+    const s = { x: pagePRef.current, v: 0 };
+    const K = 50;
+    const C = 2 * Math.sqrt(K);
+    const tick = (now) => {
+      const dt = Math.min((now - last) / 1000, 1 / 30);
+      last = now;
+      const target = pagePRef.current;
+      const a = K * (target - s.x) - C * s.v;
+      s.v += a * dt;
+      s.x += s.v * dt;
+      if (Math.abs(target - s.x) < 0.0002 && Math.abs(s.v) < 0.0002) {
+        s.x = target;
+        s.v = 0;
+      }
+      const p = s.x;
+      const fill = railFillRef.current;
+      const comet = railCometRef.current;
+      const rail = railElRef.current;
+      if (fill) fill.style.transform = `translateX(-50%) scaleY(${p})`;
+      if (comet) comet.style.top = `${p * 100}%`;
+      if (rail) rail.style.setProperty("--cy", `${p * 100}%`);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   const sendRequest = async (status) => {
     setBusy(true);
@@ -435,15 +486,15 @@ const UserProfileView = () => {
   };
 
   const renderActions = () => {
-    const primary = "btn btn-primary btn-shine bg-gradient-to-r from-primary to-secondary border-none text-white rounded-2xl h-11 px-7 font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/30 hover:scale-105 disabled:opacity-50 disabled:scale-100 transition-all";
-    const ghost = "btn btn-outline border-white/15 text-slate-200 hover:bg-white/10 rounded-2xl h-11 px-6 font-black text-xs uppercase tracking-wider disabled:opacity-50";
+    const primary = "btn btn-primary btn-shine bg-gradient-to-r from-primary to-secondary border-none text-white rounded-2xl h-11 px-7 font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/30 hover:scale-105 disabled:opacity-50 disabled:scale-100 transition-all w-full flex-nowrap";
+    const ghost = "btn btn-outline border-white/15 text-slate-200 hover:bg-white/10 rounded-2xl h-11 px-6 font-black text-xs uppercase tracking-wider disabled:opacity-50 w-full";
 
     if (relationship === "self") {
       return (
         <>
           <Link to="/profile" className={primary}>Edit Profile</Link>
           {!profile?.isPremium && (
-            <Link to="/premium" className="btn btn-outline border-amber-400/40 text-amber-300 hover:bg-amber-500/10 rounded-2xl h-11 px-6 font-black text-xs uppercase tracking-wider">
+            <Link to="/premium" className="btn btn-outline border-amber-400/40 text-amber-300 hover:bg-amber-500/10 rounded-2xl h-11 px-6 font-black text-xs uppercase tracking-wider w-full">
               Go Pro
             </Link>
           )}
@@ -454,15 +505,28 @@ const UserProfileView = () => {
     if (relationship === "connection") {
       return (
         <>
-          <Link to={`/chat/${userId}`} className={primary}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <Link to={`/chat/${userId}`} className={`${primary} inline-flex items-center justify-center gap-2 flex-nowrap`}>
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            Message
+            <span className="leading-none translate-y-px whitespace-nowrap">Message</span>
           </Link>
           {profile?.resumeURL && (
-            <a href={resolveMediaUrl(profile.resumeURL)} target="_blank" rel="noopener noreferrer" className={ghost}>
-              Resume
+            <a
+              href={resolveMediaUrl(profile.resumeURL)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-shine group relative overflow-hidden inline-flex items-center justify-center gap-2 flex-nowrap border border-cyan-400/40 bg-cyan-400/5 text-cyan-300 rounded-2xl h-11 px-6 font-black text-xs uppercase tracking-wider hover:border-cyan-300/80 hover:bg-cyan-400/15 hover:text-cyan-100 hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/30 active:scale-95 transition-all w-full"
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <path d="M14 2v6h6" />
+                <path d="M16 13H8M16 17H8M10 9H8" />
+              </svg>
+              <span className="leading-none translate-y-px whitespace-nowrap">Resume</span>
+              <svg className="w-3 h-3 shrink-0 transition-transform duration-300 group-hover:translate-y-0.5 group-hover:-translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3v12M7 10l5 5 5-5" />
+              </svg>
             </a>
           )}
         </>
@@ -475,7 +539,7 @@ const UserProfileView = () => {
           <button
             onClick={() => reviewRequest("accepted")}
             disabled={busy}
-            className="app-accept"
+            className="app-accept w-full justify-center"
           >
             <span className="request-icon-wrap">
               <svg className="request-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
@@ -487,7 +551,7 @@ const UserProfileView = () => {
           <button
             onClick={() => reviewRequest("rejected")}
             disabled={busy}
-            className="app-decline"
+            className="app-decline w-full justify-center"
           >
             <span className="request-icon-wrap">
               <svg className="request-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
@@ -502,7 +566,7 @@ const UserProfileView = () => {
 
     if (relationship === "sent_request") {
       return (
-        <span className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 text-emerald-300 text-xs font-black uppercase tracking-wider">
+        <span className="col-span-2 w-full justify-center inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 text-emerald-300 text-xs font-black uppercase tracking-wider">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
@@ -513,7 +577,7 @@ const UserProfileView = () => {
 
     if (relationship === "ignored") {
       return (
-        <span className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl border border-white/15 bg-white/5 text-slate-400 text-xs font-black uppercase tracking-wider">
+        <span className="col-span-2 w-full justify-center inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl border border-white/15 bg-white/5 text-slate-400 text-xs font-black uppercase tracking-wider">
           Passed
         </span>
       );
@@ -567,7 +631,6 @@ const UserProfileView = () => {
 
   return (
     <div className="relative overflow-hidden pb-20">
-      <CursorFollower />
       <div className="dyn-bg" aria-hidden="true">
         <span className="dyn-mesh" />
         <span className="dyn-blob dyn-blob-rose" />
@@ -577,128 +640,183 @@ const UserProfileView = () => {
         <span className="dyn-grain" />
       </div>
 
-      {/* ══════════ APPLE-STYLE SECTION NAV ══════════ */}
-      <nav className={`app-nav${scrollY > 40 ? " app-nav--solid" : ""}`} aria-label="Profile sections">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 flex items-center gap-2.5">
-          <Magnetic strength={0.45} className="app-nav-back-wrap">
-            <button
-              onClick={() => navigate(-1)}
-              className="app-nav-back"
-              title="Go back"
-              aria-label="Go back"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          </Magnetic>
-          <span className="app-nav-name hidden sm:inline-flex">{profile.firstName}</span>
-          <div className="app-nav-track">
-            <span className="app-nav-track-meta">now</span>
-            <span key={activeSection} className="app-nav-track-label">{activeLabel}</span>
-            <span className="app-nav-track-bar">
-              <span className="app-nav-track-fill" style={{ transform: `scaleX(${pageP})` }} />
+      {/* ══════════ PROFESSIONAL SECTION NAV ══════════ */}
+      <nav className={`app-nav${navSolid ? " app-nav--solid" : ""}`} aria-label="Profile sections">
+        <div className="app-nav-inner">
+          <div className="app-nav-left">
+            <Magnetic strength={0.45} className="app-nav-back-wrap">
+              <button
+                onClick={() => navigate(-1)}
+                className="app-nav-back"
+                title="Go back"
+                aria-label="Go back"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            </Magnetic>
+            <Link to="/feed" className="app-nav-brand" title="Back to your deck">
+              <span className="app-nav-brand-mark">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                </svg>
+              </span>
+              <span className="app-nav-brand-name">
+                Dev<b>Tinder</b>
+              </span>
+            </Link>
+            <span className="app-nav-divider hidden sm:block" />
+            <span className="app-nav-name">
+              {profile.firstName}
+              <span className="app-nav-name-sub hidden sm:inline"> · Profile</span>
             </span>
-            <span className="app-nav-track-count">
-              <span key={activeSection} className="app-nav-track-count-cur">{activeIdx}</span>
-              <span className="app-nav-track-count-total">/{SECTIONS.length}</span>
-            </span>
+          </div>
+
+          <div className="app-nav-links">
+            {SECTIONS.map((s) => (
+              <a
+                key={s.id}
+                href={`#${s.id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className="app-nav-link"
+              >
+                {s.label}
+              </a>
+            ))}
           </div>
         </div>
       </nav>
 
-      {/* ══════════ HERO ══════════ */}
-      <section className="relative min-h-[74vh] flex flex-col justify-end overflow-hidden">
-        <span className="chat-orb absolute -top-24 left-1/4 w-80 h-80 rounded-full bg-primary/20 blur-3xl" />
-        <span className="chat-orb absolute bottom-10 right-10 w-72 h-72 rounded-full bg-secondary/20 blur-3xl" style={{ animationDelay: "-6s" }} />
+      {/* ══════════ VERTICAL SCROLL RAIL ══════════ */}
+      <div className="page-rail" aria-hidden="true" ref={railElRef}>
+        <span className="page-rail-track" />
+        <span className="page-rail-fill" ref={railFillRef} />
+        <span className="page-rail-comet" ref={railCometRef} />
+        {SECTIONS.map((s, i) => {
+          const activeIdx = Math.max(0, SECTIONS.findIndex((x) => x.id === activeSection));
+          return (
+            <span
+              key={s.id}
+              className={`page-rail-node${i <= activeIdx ? " on" : ""}${i === activeIdx ? " live" : ""}`}
+              style={{ top: `${(i / Math.max(SECTIONS.length - 1, 1)) * 100}%`, "--nc": RAIL_COLORS[i % RAIL_COLORS.length] }}
+            />
+          );
+        })}
+      </div>
 
-        <div className="relative max-w-4xl mx-auto w-full text-center px-4 sm:px-6 pt-14 pb-12">
-          <div className="app-avatar-stage mx-auto fade-up">
-            <span className="app-avatar-halo" aria-hidden="true" />
-            <button
-              type="button"
-              className="app-avatar group relative cursor-pointer"
-              onClick={() => allPhotos.length > 0 && setViewerIndex(0)}
-              title={allPhotos.length > 1 ? "Click to open photo archive" : "Click to view photo"}
-            >
-              <MediaImage
-                src={profile.photoURL}
-                alt={`${profile.firstName} ${profile.lastName || ""}`}
-                className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover"
-              />
-              <span
-                title="Online"
-                className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full bg-emerald-500 border-[3px] border-[#070912] shadow-[0_0_14px_rgba(16,185,129,0.85)]"
-              />
-              <span className="app-avatar-view">
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 border border-white/20 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-sm">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
-                  </svg>
-                  View
-                </span>
-              </span>
-            </button>
-          </div>
+      {/* ══════════ PROFILE SHELL — SIDEBAR + CONTENT ══════════ */}      <div className="app-shell relative max-w-7xl mx-auto px-4 sm:px-6 pt-14 sm:pt-16 pb-10">
+        <div className="grid gap-6 lg:gap-8 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
 
-          <h1 className="app-hero-name fade-up" style={{ animationDelay: "80ms" }}>
-            {profile.firstName} <span>{profile.lastName}</span>
-          </h1>
+          {/* ——— left rail ——— */}
+          <aside className="app-sidebar space-y-5 lg:sticky lg:top-24 lg:self-start">
+            {/* identity card */}
+            <div className="app-side-card premium-card rounded-3xl p-6 text-center">
+              <span className="chat-orb absolute -top-16 -left-16 w-56 h-56 rounded-full bg-primary/15 blur-3xl" />
+              <div className="app-avatar-stage mx-auto">
+                <span className="app-avatar-halo" aria-hidden="true" />
+                <button
+                  type="button"
+                  className="app-avatar group relative cursor-pointer"
+                  onClick={() => allPhotos.length > 0 && setViewerIndex(0)}
+                  title={allPhotos.length > 1 ? "Click to open photo archive" : "Click to view photo"}
+                >
+                  <MediaImage
+                    src={profile.photoURL}
+                    alt={`${profile.firstName} ${profile.lastName || ""}`}
+                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover"
+                  />
+                  <span className="app-avatar-view">
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 border border-white/20 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-sm">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+                      </svg>
+                      View
+                    </span>
+                  </span>
+                </button>
+              </div>
 
-          {headline && (
-            <p className="app-hero-headline fade-up" style={{ animationDelay: "140ms" }}>
-              {headline}
-            </p>
-          )}
+              <h1 className="app-side-name">
+                {profile.firstName}
+                {profile.lastName ? <span className="app-side-name-last"> {profile.lastName}</span> : null}
+              </h1>
 
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5 fade-up" style={{ animationDelay: "200ms" }}>
-            <span className={`inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full border text-[11px] font-bold ${rel.cls}`}>
-              {relationship === "connection" && (
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+              {(career.role || career.company || career.degree) && (
+                <p className="app-side-title">
+                  <span className="app-side-ic">
+                    {career.role || career.company ? (
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="7" width="20" height="14" rx="2" />
+                        <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+                      </svg>
+                    )}
+                  </span>
+                  <span className="truncate">
+                    {career.role && <span>{career.role}</span>}
+                    {career.role && career.company && <span className="app-side-title-at"> @ {career.company}</span>}
+                    {!career.role && career.company && <span>{career.company}</span>}
+                    {!career.role && !career.company && career.degree && <span>{career.degree}</span>}
+                  </span>
+                </p>
               )}
-              {rel.label}
-            </span>
-            <MembershipBadge membershipType={profile.membershipType} isPremium={profile.isPremium} size="sm" />
-            {glyph && (
-              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-[11px] font-bold ${glyph.cls}`}>
-                {glyph.symbol} {profile.gender}
-              </span>
-            )}
-            {zodiac && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-violet-400/30 bg-violet-500/10 text-violet-200 text-[11px] font-bold">
-                {zodiac}
-              </span>
-            )}
-            {locationText && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-slate-200 text-[11px] font-bold">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                {locationText}
-              </span>
-            )}
-          </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 fade-up" style={{ animationDelay: "260ms" }}>
-            {renderActions()}
-          </div>
-        </div>
-      </section>
+              <div className="app-side-divider" aria-hidden="true" />
+
+              {locationText && (
+                <p className="app-side-loc">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {locationText}
+                </p>
+              )}
+
+              <div className="app-side-badges">
+                <span className={`inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full border text-[11px] font-bold ${rel.cls}`}>
+                  {relationship === "connection" && (
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                  {rel.label}
+                </span>
+                <MembershipBadge membershipType={profile.membershipType} isPremium={profile.isPremium} size="sm" />
+                {glyph && (
+                  <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-[11px] font-bold ${glyph.cls}`}>
+                    {glyph.symbol} {profile.gender}
+                  </span>
+                )}
+                {zodiac && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-violet-400/30 bg-violet-500/10 text-violet-200 text-[11px] font-bold">
+                    {zodiac}
+                  </span>
+                )}
+              </div>
+
+              <div className="app-side-actions">
+                {renderActions()}
+              </div>
+            </div>
 
       {/* ══════════ STATS CARD ══════════ */}
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 -mt-5">
-        <div className="app-stats premium-card rounded-3xl">
-          <div className="app-stats-head">
-            <span className="app-stats-head-title">
-              <span className="app-stats-live" aria-hidden="true" />
-              <span className="app-stats-head-label">Profile Overview</span>
-            </span>
-            <span className="app-stats-head-meta">realtime</span>
-          </div>
-          <div className="app-stats-grid grid grid-cols-2 sm:grid-cols-4">
+      <div className="app-stats premium-card rounded-3xl">
+        <div className="app-stats-head">
+          <span className="app-stats-head-title">
+            <span className="app-stats-live" aria-hidden="true" />
+            <span className="app-stats-head-label">Profile Overview</span>
+          </span>
+          <span className="app-stats-head-meta">realtime</span>
+        </div>
+        <div className="app-stats-grid grid grid-cols-2">
             <StatCell
               label="Age"
               accent="#ff2d55"
@@ -756,11 +874,14 @@ const UserProfileView = () => {
             />
           </div>
         </div>
-      </div>
+      </aside>
+
+          {/* ——— main content ——— */}
+          <div className="min-w-0 space-y-12 sm:space-y-14">
 
       {/* ══════════ ABOUT ══════════ */}
       {profile.about && (
-        <section id="about" className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 scroll-mt-20">
+        <section id="about" className="relative scroll-mt-28">
           <Reveal>
             <SectionHeader index={1} title="About" subtitle="Who they are, in their own words" />
             <div className="quote-card premium-card rounded-3xl p-7 sm:p-9 relative overflow-hidden">
@@ -776,9 +897,9 @@ const UserProfileView = () => {
 
       {/* ══════════ TECH CONSTELLATION ══════════ */}
       {skillList.length > 0 && (
-        <section id="tech" className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 scroll-mt-20">
+        <section id="tech" className="relative scroll-mt-28">
           <Reveal>
-            <SectionHeader index={2} title="Tech Constellation" subtitle="A live star map of their stack — slow orbits, twinkling nodes, passing comets" />
+            <SectionHeader index={2} title="Tech Constellation" subtitle="A live star map of their stack — hover a star to highlight it" />
           </Reveal>
           <Reveal variant="zoom">
             <div className="constellation-panel relative rounded-[2rem] overflow-hidden border border-white/10 bg-[#070912]">
@@ -796,7 +917,7 @@ const UserProfileView = () => {
       )}
 
       {/* ══════════ JOURNEY TIMELINE ══════════ */}
-      <section id="journey" className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 scroll-mt-20">
+      <section id="journey" className="relative scroll-mt-28">
         <Reveal>
           <SectionHeader index={3} title="The Journey" subtitle="Work & education across time" />
         </Reveal>
@@ -880,7 +1001,7 @@ const UserProfileView = () => {
 
       {/* ══════════ VIBE ══════════ */}
       {(hobbies.length > 0 || likes.length > 0 || dislikes.length > 0) && (
-        <section id="vibe" className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 scroll-mt-20">
+        <section id="vibe" className="relative scroll-mt-28">
           <Reveal>
             <SectionHeader index={4} title="The Vibe" subtitle="Hobbies, likes & dislikes — each with its own energy" />
           </Reveal>
@@ -962,7 +1083,7 @@ const UserProfileView = () => {
 
       {/* ══════════ MEDIA GALLERY ══════════ */}
       {allPhotos.length > 1 && (
-        <section id="media" className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 scroll-mt-20">
+        <section id="media" className="relative scroll-mt-28">
           <Reveal>
             <SectionHeader
               index={5}
@@ -1005,8 +1126,8 @@ const UserProfileView = () => {
       )}
 
       {/* ══════════ LINKS ══════════ */}
-      {(socialLinks.length > 0 || codingLinks.length > 0 || profile.resumeURL) && (
-        <section id="links" className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 scroll-mt-20">
+      {(socialLinks.length > 0 || codingLinks.length > 0) && (
+        <section id="links" className="relative scroll-mt-28">
           <Reveal>
             <SectionHeader index={6} title="Connect Elsewhere" subtitle="Find them across the web" />
           </Reveal>
@@ -1029,25 +1150,6 @@ const UserProfileView = () => {
                 </Reveal>
               );
             })}
-            {profile.resumeURL && (
-              <Reveal variant="up" delay={socialLinks.length * 60}>
-                <a
-                  href={resolveMediaUrl(profile.resumeURL)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group/resume relative overflow-hidden inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-gradient-to-br from-primary to-secondary text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-primary/30 hover:scale-105 hover:shadow-primary/50 active:scale-95 transition-all"
-                >
-                  <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent group-hover/resume:translate-x-full transition-transform duration-700" />
-                  <svg className="w-3.5 h-3.5 relative" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                    <path d="M14 2v6h6" />
-                    <path d="M12 18v-6" />
-                    <path d="M9 15h6" />
-                  </svg>
-                  Resume
-                </a>
-              </Reveal>
-            )}
             {codingLinks.map((l, idx) => {
               const href = getProfileLink(l.value.trim(), l.platform);
               if (!href) return null;
@@ -1070,8 +1172,11 @@ const UserProfileView = () => {
         </section>
       )}
 
+          </div>
+        </div>
+
       {/* footer hint */}
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 mt-16 text-center">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 mt-16 text-center">
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-slate-200 text-xs font-bold hover:bg-white/10 hover:scale-105 active:scale-95 transition-all"
@@ -1084,6 +1189,7 @@ const UserProfileView = () => {
         <p className="mt-4 font-mono text-[9px] font-bold tracking-[0.35em] text-base-content/30">
           PROFILE_VIEW_v3 · DEV_SIGNAL_ACTIVE
         </p>
+      </div>
       </div>
 
       {viewerIndex !== null && allPhotos.length > 0 && (

@@ -7,7 +7,7 @@ import MediaImage from "./MediaImage";
 import {
   addNotifications,
   markAllRead,
-  markNotificationRead,
+  removeNotification,
 } from "../utils/notificationSlice";
 
 const getTypeMeta = (type) => {
@@ -102,18 +102,18 @@ const NotificationBell = () => {
 
   const handleClick = async (n) => {
     setOpen(false);
-    if (!n.isRead) {
-      try {
+    try {
+      if (!n.isRead) {
         await axios.patch(
           `${BASE_URL}notifications/${n._id}/read`,
           {},
           { withCredentials: true }
         );
-        dispatch(markNotificationRead(n._id));
-      } catch (err) {
-        console.error("Error marking notification read:", err);
       }
+    } catch (err) {
+      console.error("Error marking notification read:", err);
     }
+    dispatch(removeNotification(n._id));
     if (n.link) navigate(n.link);
   };
 
@@ -158,7 +158,7 @@ const NotificationBell = () => {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-3 w-80 sm:w-96 z-[60] overflow-hidden rounded-2xl bg-base-900/95 border border-white/10 shadow-2xl backdrop-blur-xl animate-slide-up">
+        <div className="absolute right-0 mt-3 w-80 sm:w-96 z-[60] overflow-hidden rounded-2xl bg-[#0d101c] border border-white/10 shadow-2xl shadow-black/60 animate-slide-up">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
             <p className="text-xs font-black text-white uppercase tracking-widest">
               Notifications

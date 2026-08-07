@@ -186,9 +186,6 @@ const Requests = () => {
                   alt={`${firstName} ${lastName}`}
                   className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover"
                 />
-                <span className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-base-950">
-                  <span className="absolute inset-0 rounded-full bg-emerald-400 ring-dot" />
-                </span>
               </div>
 
               {/* Info */}

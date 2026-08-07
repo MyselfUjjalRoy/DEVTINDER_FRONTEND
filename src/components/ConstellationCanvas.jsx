@@ -3,10 +3,40 @@ import { useEffect, useRef } from "react";
 const COLORS = ["#ff2d55", "#22d3ee", "#fbbf24", "#34d399", "#a78bfa", "#f472b6"];
 
 const RINGS = [
-  { r: 0.16, speed: 0.35, sats: 4 },
-  { r: 0.29, speed: -0.28, sats: 5 },
-  { r: 0.42, speed: 0.2, sats: 6 },
+  { r: 0.16 },
+  { r: 0.29 },
+  { r: 0.42 },
 ];
+
+const makeGlow = (color) => {
+  const size = 64;
+  const c = document.createElement("canvas");
+  c.width = size;
+  c.height = size;
+  const g = c.getContext("2d");
+  const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  grad.addColorStop(0, color);
+  grad.addColorStop(0.35, color);
+  grad.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, size, size);
+  return c;
+};
+
+const rr = (ctx, x, y, w, h, r) => {
+  if (typeof ctx.roundRect === "function") {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+};
 
 const ConstellationCanvas = ({ skills }) => {
   const canvasRef = useRef(null);
@@ -20,11 +50,25 @@ const ConstellationCanvas = ({ skills }) => {
     let raf;
     let W = 0;
     let H = 0;
-    let shooting = null;
     let t = 0;
+    let last = 0;
+    let visible = true;
     let driftX = 0;
     let driftY = 0;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const glowSprites = {};
+    COLORS.forEach((c) => {
+      glowSprites[c] = makeGlow(c);
+    });
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry.isIntersecting;
+      },
+      { threshold: 0.02 },
+    );
+    io.observe(canvas);
 
     const onMove = (e) => {
       const r = canvas.getBoundingClientRect();
@@ -66,12 +110,17 @@ const ConstellationCanvas = ({ skills }) => {
 
     const draw = (now) => {
       raf = requestAnimationFrame(draw);
-      if (!reduce) t += 0.0014;
+      const dt = Math.min((now - last) / 1000, 1 / 30);
+      last = now;
+      if (!reduce) t += dt * 0.085;
+      if (!visible || !W || !H) return;
       const tt = reduce ? 6000 : now;
       ctx.clearRect(0, 0, W, H);
 
-      const targetX = mouse.current.inside ? (mouse.current.x - 0.5) * 90 : 0;
-      const targetY = mouse.current.inside ? (mouse.current.y - 0.5) * 60 : 0;
+      const idleX = Math.sin(t * 0.5) * 7;
+      const idleY = Math.cos(t * 0.33) * 6;
+      const targetX = (mouse.current.inside ? (mouse.current.x - 0.5) * 90 : 0) + idleX;
+      const targetY = (mouse.current.inside ? (mouse.current.y - 0.5) * 60 : 0) + idleY;
       driftX += (targetX - driftX) * 0.05;
       driftY += (targetY - driftY) * 0.05;
 
@@ -79,7 +128,6 @@ const ConstellationCanvas = ({ skills }) => {
       const cy = H / 2 + driftY;
       const scale = Math.min(W, H);
 
-      // faint radial glow behind the whole map
       const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, scale * 0.62);
       bg.addColorStop(0, "rgba(191, 90, 242, 0.08)");
       bg.addColorStop(0.55, "rgba(34, 211, 238, 0.03)");
@@ -87,7 +135,6 @@ const ConstellationCanvas = ({ skills }) => {
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
 
-      // concentric orbit rings with orbiting satellites
       ctx.save();
       ctx.translate(cx, cy);
       for (let ri = 0; ri < RINGS.length; ri++) {
@@ -100,33 +147,8 @@ const ConstellationCanvas = ({ skills }) => {
         ctx.arc(0, 0, R, 0, Math.PI * 2);
         ctx.stroke();
         ctx.setLineDash([]);
-        const spin = (tt / 16000) * ring.speed;
-        for (let s = 0; s < ring.sats; s++) {
-          const a = spin + (s / ring.sats) * Math.PI * 2;
-          const sx = Math.cos(a) * R;
-          const sy = Math.sin(a) * R;
-          const col = COLORS[(ri * 2 + s) % COLORS.length];
-          ctx.save();
-          ctx.globalAlpha = 0.55 + 0.45 * Math.sin(tt / 500 + s * 2);
-          ctx.shadowColor = col;
-          ctx.shadowBlur = 8;
-          ctx.fillStyle = col;
-          ctx.beginPath();
-          ctx.arc(sx, sy, 1.8, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        }
       }
       ctx.restore();
-
-      // ambient starfield
-      for (let i = 0; i < 46; i++) {
-        const sx = (i * 61) % W;
-        const sy = (i * 97) % H;
-        const a = reduce ? 0.12 : 0.06 + 0.1 * Math.sin(tt / 900 + i * 1.7);
-        ctx.fillStyle = `rgba(255,255,255,${a})`;
-        ctx.fillRect(sx, sy, 1.4, 1.4);
-      }
 
       const pos = nodes.map((n, i) => ({
         ...n,
@@ -134,7 +156,6 @@ const ConstellationCanvas = ({ skills }) => {
         y: cy + (n.baseY - 0.5) * scale * 1.02 + Math.cos(t * 0.7 + i) * 5,
       }));
 
-      // hover focus — nearest node to cursor
       let focus = -1;
       let fd = Infinity;
       if (mouse.current.inside) {
@@ -150,7 +171,6 @@ const ConstellationCanvas = ({ skills }) => {
         if (fd > 52 * 52) focus = -1;
       }
 
-      // proximity particle web between close nodes
       for (let i = 0; i < pos.length; i++) {
         for (let j = i + 1; j < pos.length; j++) {
           const dx = pos[i].x - pos[j].x;
@@ -168,7 +188,6 @@ const ConstellationCanvas = ({ skills }) => {
         }
       }
 
-      // core links + traveling energy pulses
       for (let i = 0; i < pos.length; i++) {
         const p = pos[i];
         const pulse = 0.25 + 0.2 * Math.sin(tt / 1200 + p.phase);
@@ -186,92 +205,85 @@ const ConstellationCanvas = ({ skills }) => {
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(q.x, q.y);
         ctx.stroke();
-
-        if (!reduce) {
-          const pr = (now / 2600 + p.phase) % 1;
-          if (pr > 0.06) {
-            const px = cx + (p.x - cx) * pr;
-            const py = cy + (p.y - cy) * pr;
-            ctx.save();
-            ctx.globalAlpha = (1 - pr) * 0.7;
-            ctx.shadowColor = p.color;
-            ctx.shadowBlur = 8;
-            ctx.fillStyle = p.color;
-            ctx.beginPath();
-            ctx.arc(px, py, 1.8, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-          }
-        }
       }
 
-      // skill nodes + labels
       for (let i = 0; i < pos.length; i++) {
         const p = pos[i];
         const focused = i === focus;
         const twinkle = focused ? 1 : 0.55 + 0.45 * Math.sin(tt / 700 + p.tw);
+        const glow = glowSprites[p.color];
+
+        const dx = p.x - cx;
+        const dy = p.y - cy;
+        const dl = Math.hypot(dx, dy) || 1;
+        const nx = dx / dl;
+        const ny = dy / dl;
+        const lx = p.x + nx * (p.rad + 15);
+        const ly = Math.min(Math.max(p.y + ny * (p.rad + 15), 20), H - 20);
 
         ctx.save();
-        ctx.globalAlpha = 0.12 + 0.08 * twinkle;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.rad * 3.4, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.globalAlpha = (0.12 + 0.08 * twinkle) * (focused ? 1.4 : 0.8);
+        const halo = p.rad * 3.4 * 6;
+        ctx.drawImage(glow, p.x - halo / 2, p.y - halo / 2, halo, halo);
         ctx.restore();
 
         ctx.save();
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = focused ? 26 : 12 * twinkle;
-        ctx.fillStyle = p.color;
         ctx.globalAlpha = focused ? 1 : 0.5 + 0.5 * twinkle;
+        ctx.fillStyle = p.color;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, focused ? p.rad + 2 : p.rad, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, focused ? p.rad + 2.5 : p.rad, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
         if (focused) {
           ctx.save();
-          ctx.globalAlpha = 0.55 + 0.3 * Math.sin(now / 400);
+          ctx.globalAlpha = 0.4 + 0.25 * Math.sin(now / 380);
           ctx.strokeStyle = p.color;
-          ctx.lineWidth = 1.5;
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([2, 5]);
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.rad + 12, 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, p.rad + 11, 0, Math.PI * 2);
           ctx.stroke();
+          ctx.setLineDash([]);
           ctx.restore();
         }
 
         ctx.save();
-        ctx.globalAlpha = focused ? 1 : 0.72 + 0.28 * Math.sin(tt / 900 + p.phase);
-        ctx.fillStyle = focused ? "#ffffff" : "#e2e8f0";
+        ctx.globalAlpha = focused ? 1 : 0.45 + 0.18 * Math.sin(tt / 900 + p.phase);
         ctx.font = focused
-          ? "900 13px 'Fira Code', ui-monospace, SFMono-Regular, monospace"
-          : "700 12px 'Fira Code', ui-monospace, SFMono-Regular, monospace";
-        ctx.textAlign = "center";
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = focused ? 16 : 10;
-        ctx.fillText(p.skill, p.x, p.y - p.rad - 8);
+          ? "800 11px 'Fira Code', ui-monospace, monospace"
+          : "700 10px 'Fira Code', ui-monospace, monospace";
+        ctx.fillStyle = focused ? p.color : "#cbd5e1";
+        ctx.textBaseline = "middle";
+        if (Math.abs(nx) > 0.35) {
+          ctx.textAlign = nx > 0 ? "left" : "right";
+          ctx.fillText(p.skill.toUpperCase(), lx + (nx > 0 ? 6 : -6), ly);
+        } else {
+          ctx.textAlign = "center";
+          ctx.fillText(p.skill.toUpperCase(), lx, ly);
+        }
         ctx.restore();
       }
 
-      // core
+      ctx.save();
+      ctx.globalAlpha = 0.75;
+      ctx.drawImage(glowSprites["#ff2d55"], cx - 65, cy - 65, 130, 130);
+      ctx.restore();
+
       const cg = ctx.createLinearGradient(cx - 26, cy - 26, cx + 26, cy + 26);
       cg.addColorStop(0, "#ff2d55");
       cg.addColorStop(1, "#bf5af2");
-      ctx.save();
-      ctx.shadowColor = "#ff2d55";
-      ctx.shadowBlur = 26;
       ctx.fillStyle = cg;
       ctx.beginPath();
       ctx.arc(cx, cy, 24, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
       ctx.fillStyle = "#fff";
       ctx.font = "900 13px 'Fira Code', ui-monospace, monospace";
       ctx.textAlign = "center";
-      ctx.fillText("</>", cx, cy + 4);
+      ctx.textBaseline = "middle";
+      ctx.fillText("</>", cx, cy + 1);
       ctx.restore();
 
-      // pulsing rings around the core
       if (!reduce) {
         const corePulse = 0.5 + 0.5 * Math.sin(now / 900);
         ctx.save();
@@ -286,36 +298,13 @@ const ConstellationCanvas = ({ skills }) => {
         ctx.stroke();
         ctx.restore();
       }
-
-      // shooting star
-      if (!reduce && Math.random() < 0.004) {
-        shooting = {
-          x: Math.random() * W,
-          y: Math.random() * H * 0.4,
-          vx: 3 + Math.random() * 3,
-          vy: 1.5 + Math.random() * 2,
-          life: 60,
-        };
-      }
-      if (shooting) {
-        shooting.x += shooting.vx;
-        shooting.y += shooting.vy;
-        shooting.life -= 1;
-        const a = Math.max(Math.min(shooting.life / 20, 0.9), 0);
-        ctx.strokeStyle = `rgba(255,255,255,${a})`;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(shooting.x, shooting.y);
-        ctx.lineTo(shooting.x - shooting.vx * 6, shooting.y - shooting.vy * 6);
-        ctx.stroke();
-        if (shooting.life <= 0) shooting = null;
-      }
     };
 
     draw(0);
 
     return () => {
       cancelAnimationFrame(raf);
+      io.disconnect();
       window.removeEventListener("resize", resize);
       panel.removeEventListener("mousemove", onMove);
       panel.removeEventListener("mouseleave", onLeave);
@@ -327,7 +316,7 @@ const ConstellationCanvas = ({ skills }) => {
   return (
     <canvas
       ref={canvasRef}
-      className="block w-full h-[420px] sm:h-[520px]"
+      className="block w-full h-[420px] sm:h-[520px] will-change-transform"
       aria-label="Tech stack constellation"
     />
   );
