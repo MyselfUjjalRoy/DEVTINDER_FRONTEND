@@ -4,6 +4,7 @@ import { resolveMediaUrl, getProfileLink } from "../utils/constants";
 import { getSkillStyle } from "../utils/skillStyles";
 import { PlatformIcon, BRAND_COLORS, LINK_LABELS } from "../utils/profileLinks";
 import MediaImage from "./MediaImage";
+import MatchBadge from "./MatchBadge";
 
 const GENDER_GLYPH = {
   Male: { symbol: "♂", tint: "from-sky-400 to-blue-600", glow: "rgba(56,189,248,0.55)" },
@@ -333,6 +334,7 @@ const UserCard = ({
         )}
         <div className="absolute top-4 left-4 right-4 flex items-start justify-between pointer-events-none">
           <div className="flex items-center gap-1.5">
+            <MatchBadge score={user.score} breakdown={user.breakdown} />
             {user.starredYou && (
               <span
                 title="This developer super connected with your profile"
