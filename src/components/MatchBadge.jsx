@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 /**
  * MatchBadge — the visible result of the compatibility recommender.
@@ -13,6 +13,12 @@ import { useState } from "react";
  * honest while never telling a user someone is a literal "0% match". The
  * per-signal percentages in the popover remain exact so the "why" is
  * quantitative.
+ *
+ * The popover is rendered with `position: fixed` anchored to the button's
+ * bounding rect. The badge lives inside the card's photo `<figure>` which has
+ * `overflow-hidden`, so an absolutely-positioned popover would get clipped or
+ * covered by the card. Fixed positioning escapes that stacking context
+ * entirely.
  *
  * The `score` and `breakdown` fields come straight from the /feed API response.
  * If they're missing (older cached feeds), the badge simply doesn't render.
@@ -30,8 +36,81 @@ const bandForScore = (score) =>
 const labelForScore = (score) =>
   score >= 70 ? "High match" : score >= 40 ? "Moderate match" : "Low match";
 
+const POPOVER_WIDTH = 192; // w-48
+const POPOVER_HEIGHT = 160; // rough max height, used to flip above the badge
+const EDGE_PAD = 8;
+
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
 const MatchBadge = ({ score, breakdown }) => {
   const [open, setOpen] = useState(false);
+  const [anchor, setAnchor] = useState(null);
+  const btnRef = useRef(null);
+  const popRef = useRef(null);
+  const closeTimer = useRef(null);
+
+  // Position the fixed popover just under the badge, clamped to the viewport
+  // so it never goes off-screen. Flips above the badge when there is no room
+  // below.
+  const computeAnchor = () => {
+    if (!btnRef.current) return null;
+    const r = btnRef.current.getBoundingClientRect();
+    const center = r.left + r.width / 2;
+    const minLeft = POPOVER_WIDTH / 2 + EDGE_PAD;
+    const maxLeft = window.innerWidth - POPOVER_WIDTH / 2 - EDGE_PAD;
+    let left = clamp(center, minLeft, maxLeft);
+    let top = r.bottom + EDGE_PAD;
+    if (top + POPOVER_HEIGHT > window.innerHeight - EDGE_PAD) {
+      top = Math.max(EDGE_PAD, r.top - POPOVER_HEIGHT - EDGE_PAD);
+    }
+    return { top, left };
+  };
+
+  const openPop = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setAnchor(computeAnchor());
+    setOpen(true);
+  };
+
+  // Short delay so moving the cursor between the badge and its popover (they
+  // are separate DOM nodes) doesn't blink it closed.
+  const scheduleClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpen(false), 150);
+  };
+
+  const closeNow = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setOpen(false);
+  };
+
+  useEffect(
+    () => () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    },
+    [],
+  );
+
+  // Close when tapping/clicking outside, or when the fixed popover would
+  // detach from the badge (scroll / resize).
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e) => {
+      const target = e.target;
+      if (btnRef.current && btnRef.current.contains(target)) return;
+      if (popRef.current && popRef.current.contains(target)) return;
+      setOpen(false);
+    };
+    const onViewportChange = () => setOpen(false);
+    document.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("scroll", onViewportChange, true);
+    window.addEventListener("resize", onViewportChange);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("scroll", onViewportChange, true);
+      window.removeEventListener("resize", onViewportChange);
+    };
+  }, [open]);
 
   if (typeof score !== "number" || Number.isNaN(score)) return null;
 
@@ -50,19 +129,20 @@ const MatchBadge = ({ score, breakdown }) => {
     : [];
 
   return (
-    <div
-      className="relative pointer-events-auto"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
+    <div className="pointer-events-auto">
       <button
+        ref={btnRef}
         type="button"
         title={`${labelForScore(clamped)} — see why`}
         aria-label={`${labelForScore(clamped)} compatibility`}
         aria-expanded={open}
+        onMouseEnter={openPop}
+        onMouseLeave={scheduleClose}
         onClick={(e) => {
           e.stopPropagation();
-          setOpen((o) => !o);
+          e.preventDefault();
+          if (open) closeNow();
+          else openPop();
         }}
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
@@ -87,36 +167,39 @@ const MatchBadge = ({ score, breakdown }) => {
         </span>
       </button>
 
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 w-48 rounded-2xl bg-[#171228]/95 backdrop-blur-xl border border-white/10 p-3 shadow-2xl">
-            <p className="text-[10px] font-black uppercase tracking-widest" style={{ color }}>
-              {labelForScore(clamped)}
-            </p>
-            {signals.length > 0 ? (
-              <ul className="mt-2 space-y-1.5">
-                {signals.map((signal) => (
-                  <li key={signal.key} className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold text-white/60 capitalize">
-                      {signal.key}
-                    </span>
-                    <span className="text-[11px] font-black text-white">
-                      {signal.value}%{signal.hasData ? "" : "*"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-1 text-[10px] text-white/50">Not enough profile data yet.</p>
-            )}
-            <p className="mt-2 text-[9px] text-white/35 leading-snug">
-              {signals.some((s) => !s.hasData)
-                ? "* based on available profile data"
-                : "Skills & location similarity"}
-            </p>
-          </div>
-        </>
+      {open && anchor && (
+        <div
+          ref={popRef}
+          className="fixed z-[60] w-48 -translate-x-1/2 rounded-2xl bg-[#171228]/95 backdrop-blur-xl border border-white/10 p-3 shadow-2xl"
+          style={{ top: anchor.top, left: anchor.left }}
+          onMouseEnter={openPop}
+          onMouseLeave={scheduleClose}
+        >
+          <p className="text-[10px] font-black uppercase tracking-widest" style={{ color }}>
+            {labelForScore(clamped)}
+          </p>
+          {signals.length > 0 ? (
+            <ul className="mt-2 space-y-1.5">
+              {signals.map((signal) => (
+                <li key={signal.key} className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold text-white/60 capitalize">
+                    {signal.key}
+                  </span>
+                  <span className="text-[11px] font-black text-white">
+                    {signal.value}%{signal.hasData ? "" : "*"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-[10px] text-white/50">Not enough profile data yet.</p>
+          )}
+          <p className="mt-2 text-[9px] text-white/35 leading-snug">
+            {signals.some((s) => !s.hasData)
+              ? "* based on available profile data"
+              : "Skills & location similarity"}
+          </p>
+        </div>
       )}
     </div>
   );
