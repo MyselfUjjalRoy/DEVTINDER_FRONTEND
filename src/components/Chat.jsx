@@ -183,6 +183,7 @@ const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [partner, setPartner] = useState(null);
+  const [replyToMsg, setReplyToMsg] = useState(null);
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -253,7 +254,7 @@ const Chat = () => {
         res?.data?.messages
           .filter((msg) => !msg.deletedFor || !msg.deletedFor.includes(userId))
           .map((msg) => {
-            const { senderId, text, _id, status, isDeleted, reactions, attachment } = msg;
+            const { senderId, text, _id, status, isDeleted, reactions, attachment, replyTo } = msg;
             return {
               _id,
               firstName: senderId?.firstName,
@@ -263,6 +264,7 @@ const Chat = () => {
               isDeleted: isDeleted || false,
               reactions: reactions || [],
               attachment: attachment || null,
+              replyTo: replyTo || null,
               createdAt: msg.createdAt,
             };
           }) || [];
@@ -308,6 +310,7 @@ const Chat = () => {
     setHasMore(true);
     setMessages([]);
     setPartner(null);
+    setReplyToMsg(null);
     setTypingUser(null);
     setIsTyping(false);
     setIsOnline(false);
@@ -349,11 +352,11 @@ const Chat = () => {
       if (offlineUserId === targetUserId) setIsOnline(false);
     });
 
-    socket.on("messageReceived", ({ _id, firstName: fName, lastName: lName, text, status, attachment }) => {
+    socket.on("messageReceived", ({ _id, firstName: fName, lastName: lName, text, status, attachment, replyTo }) => {
       const shouldScroll = isAtBottom();
       setMessages((prev) => [
         ...prev,
-        { _id, firstName: fName, lastName: lName, text, status: status || "sent", attachment: attachment || null, reactions: [], isDeleted: false, createdAt: new Date() },
+        { _id, firstName: fName, lastName: lName, text, status: status || "sent", attachment: attachment || null, replyTo: replyTo || null, reactions: [], isDeleted: false, createdAt: new Date() },
       ]);
       if (shouldScroll) {
         setTimeout(() => scrollToBottom(), 30);
@@ -488,8 +491,10 @@ const Chat = () => {
       socketRef.current.emit("sendMessage", {
         targetUserId,
         text: msgText,
+        replyTo: replyToMsg ? { _id: replyToMsg._id } : null,
       });
       setNewMessage("");
+      setReplyToMsg(null);
       if (socketRef.current) {
         socketRef.current.emit("stopTyping", { targetUserId });
       }
@@ -503,7 +508,9 @@ const Chat = () => {
         targetUserId,
         text: "",
         attachment,
+        replyTo: replyToMsg ? { _id: replyToMsg._id } : null,
       });
+      setReplyToMsg(null);
       setTimeout(() => scrollToBottom(), 30);
     }
   };
@@ -631,6 +638,31 @@ const Chat = () => {
       socketRef.current.emit("deleteMessage", { messageId, targetUserId, deleteFor });
     }
     setShowDeleteMenu(null);
+  };
+
+  const startReply = (msg) => {
+    setReplyToMsg({
+      _id: msg._id,
+      senderName: `${msg.firstName} ${msg.lastName || ""}`.trim() || "Message",
+      text: msg.text || "",
+      isDeleted: !!msg.isDeleted,
+      attachment: msg.attachment
+        ? { type: msg.attachment.type, name: msg.attachment.name, url: msg.attachment.url }
+        : null,
+    });
+    setReactionMsgId(null);
+    setShowDeleteMenu(null);
+  };
+
+  const replySnippet = (reply) => {
+    if (!reply) return "";
+    if (reply.isDeleted) return "This message was deleted";
+    if (reply.attachment) {
+      if (reply.attachment.type === "image") return "📷 Photo";
+      if (reply.attachment.type === "audio") return "🎤 Voice message";
+      return `📎 ${reply.attachment.name || "File"}`;
+    }
+    return reply.text || "";
   };
 
   const handleSearch = async () => {
@@ -1004,6 +1036,40 @@ const Chat = () => {
                         msg.isDeleted ? "opacity-60 italic" : ""
                       } ${highlightMsgId === msg._id ? "search-highlight" : ""}`}
                     >
+                      {!msg.isDeleted && reactionMsgId === msg._id && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); startReply(msg); }}
+                          className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center rounded-full bg-black/25 border border-white/25 text-white/85 hover:bg-white/25 hover:scale-110 transition-all z-10"
+                          title="Reply"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M3 10h10a8 8 0 018 8v2M3 10l6-6m-6 6l6 6" />
+                          </svg>
+                        </button>
+                      )}
+                      {msg.replyTo && (
+                        <div
+                          className={`reply-quote mb-2 rounded-xl border-l-[3px] px-2.5 py-1.5 ${
+                            isSelf ? "bg-white/10 border-white/40" : "bg-black/20 border-primary/70"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {msg.replyTo.attachment?.type === "image" && msg.replyTo.attachment.url && (
+                              <MediaImage
+                                src={resolveMediaUrl(msg.replyTo.attachment.url)}
+                                alt=""
+                                className="w-6 h-6 rounded-md object-cover shrink-0"
+                              />
+                            )}
+                            <span className={`text-[9px] font-black uppercase tracking-widest truncate ${isSelf ? "text-white/60" : "text-primary"}`}>
+                              {msg.replyTo.senderName || "Message"}
+                            </span>
+                          </div>
+                          <p className={`text-[11px] truncate mt-0.5 ${isSelf ? "text-white/75" : "text-white/70"}`}>
+                            {replySnippet(msg.replyTo)}
+                          </p>
+                        </div>
+                      )}
                       {msg.isDeleted ? (
                         "This message was deleted"
                       ) : (
@@ -1055,15 +1121,15 @@ const Chat = () => {
                         </div>
                       )}
 
-                      {/* Hover actions: reaction + delete */}
+                      {/* Hover actions: react + delete (outside the bubble, at the side) */}
                       {!msg.isDeleted && reactionMsgId === msg._id && (
-                        <div className={`absolute ${isSelf ? "-left-16" : "-right-8"} top-1/2 -translate-y-1/2 flex items-center gap-1 transition-opacity duration-150`}>
+                        <div className={`absolute ${isSelf ? "-left-[4.5rem]" : "-right-14"} top-1/2 -translate-y-1/2 z-20 flex items-center gap-0.5 rounded-full bg-white/[0.09] border border-white/15 backdrop-blur-xl px-1.5 py-1 shadow-xl shadow-black/40 transition-opacity duration-150`}>
                           <button
                             onClick={(e) => { e.stopPropagation(); setActiveReactionPicker(activeReactionPicker === msg._id ? null : msg._id); }}
-                            className="w-7 h-7 flex items-center justify-center rounded-full bg-white/[0.08] border border-white/15 shadow-lg backdrop-blur-md hover:bg-white/15 hover:scale-110 transition-all"
+                            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/15 hover:scale-110 transition-all"
                             title="Add reaction"
                           >
-                            <svg className="w-3.5 h-3.5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5 text-white/75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                           </button>
@@ -1071,10 +1137,10 @@ const Chat = () => {
                             <div className="relative">
                               <button
                                 onClick={(e) => { e.stopPropagation(); setShowDeleteMenu(showDeleteMenu === msg._id ? null : msg._id); }}
-                                className="w-7 h-7 flex items-center justify-center rounded-full bg-white/[0.08] border border-white/15 shadow-lg backdrop-blur-md hover:bg-red-500/20 hover:border-red-500/30 hover:scale-110 transition-all"
+                                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-500/20 hover:scale-110 transition-all"
                                 title="Delete message"
                               >
-                                <svg className="w-3.5 h-3.5 text-white/60 hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-3.5 h-3.5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                               </button>
@@ -1139,8 +1205,64 @@ const Chat = () => {
         </div>
 
         {/* Input Area */}
-        <div className="relative px-4 py-3.5 border-t border-white/10 flex items-center gap-2.5 sm:gap-3 bg-white/[0.04] backdrop-blur-2xl">
+        <div className="relative border-t border-white/10 bg-white/[0.04] backdrop-blur-2xl">
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent pointer-events-none" />
+          {replyToMsg && (
+            <div className="px-4 pt-2.5 reply-bar-in">
+              <div className="flex items-center gap-2.5 bg-white/[0.06] border border-primary/30 rounded-2xl px-3 py-2 shadow-lg">
+                <span className="shrink-0 w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6-6m-6 6l6 6" />
+                  </svg>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-primary truncate">
+                    Replying to {replyToMsg.senderName}
+                  </p>
+                  <p className="text-[11px] text-white/70 flex items-center gap-1.5">
+                    {replyToMsg.isDeleted ? (
+                      <span className="truncate italic">This message was deleted</span>
+                    ) : replyToMsg.attachment?.type === "image" && replyToMsg.attachment.url ? (
+                      <>
+                        <MediaImage
+                          src={resolveMediaUrl(replyToMsg.attachment.url)}
+                          alt=""
+                          className="w-5 h-5 rounded object-cover shrink-0"
+                        />
+                        <span className="truncate">Photo</span>
+                      </>
+                    ) : replyToMsg.attachment?.type === "audio" ? (
+                      <>
+                        <svg className="w-3.5 h-3.5 shrink-0 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-14 0m7 7v4m-4 0h8" />
+                        </svg>
+                        <span className="truncate">Voice message</span>
+                      </>
+                    ) : replyToMsg.attachment ? (
+                      <>
+                        <svg className="w-3.5 h-3.5 shrink-0 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="truncate">{replyToMsg.attachment.name || "File"}</span>
+                      </>
+                    ) : (
+                      <span className="truncate">{replyToMsg.text}</span>
+                    )}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setReplyToMsg(null)}
+                  className="w-6 h-6 shrink-0 flex items-center justify-center rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-all"
+                  title="Cancel reply"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="px-4 py-3.5 flex items-center gap-2.5 sm:gap-3">
           <input
             type="file"
             ref={fileInputRef}
@@ -1267,6 +1389,7 @@ const Chat = () => {
               </svg>
             </button>
           )}
+          </div>
         </div>
       </div>
 
