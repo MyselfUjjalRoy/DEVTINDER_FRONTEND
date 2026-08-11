@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const GENDERS = [
   {
@@ -24,21 +25,32 @@ const GENDERS = [
 const GenderSelect = ({ value, onChange }) => {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const [anchor, setAnchor] = useState(null);
   const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+  const popRef = useRef(null);
   const selected = GENDERS.find((g) => g.value === value) || null;
+
+  const measureAnchor = () => {
+    const r = triggerRef.current?.getBoundingClientRect();
+    if (r) setAnchor({ top: r.bottom + 8, left: r.left, width: r.width });
+  };
 
   useEffect(() => {
     if (!open) return;
-    setActive(Math.max(0, GENDERS.findIndex((g) => g.value === value)));
     const onDocClick = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+      if (rootRef.current && !rootRef.current.contains(e.target) && !popRef.current?.contains(e.target)) setOpen(false);
     };
     const onKey = (e) => e.key === "Escape" && setOpen(false);
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", measureAnchor);
+    document.addEventListener("scroll", measureAnchor, true);
     return () => {
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", measureAnchor);
+      document.removeEventListener("scroll", measureAnchor, true);
     };
   }, [open, value]);
 
@@ -50,6 +62,21 @@ const GenderSelect = ({ value, onChange }) => {
     setOpen(false);
   };
 
+  const toggle = () => {
+    if (open) setOpen(false);
+    else {
+      setActive(Math.max(0, GENDERS.findIndex((g) => g.value === value)));
+      measureAnchor();
+      setOpen(true);
+    }
+  };
+
+  const openDropdown = () => {
+    setActive(Math.max(0, GENDERS.findIndex((g) => g.value === value)));
+    measureAnchor();
+    setOpen(true);
+  };
+
   return (
     <div className="relative" ref={rootRef}>
       <label className="label py-1">
@@ -59,23 +86,24 @@ const GenderSelect = ({ value, onChange }) => {
       </label>
 
       <button
+        ref={triggerRef}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         onKeyDown={(e) => {
           if (e.key === "ArrowDown") {
             e.preventDefault();
-            setOpen(true);
+            openDropdown();
             move(1);
           } else if (e.key === "ArrowUp") {
             e.preventDefault();
-            setOpen(true);
+            openDropdown();
             move(-1);
           } else if (e.key === "Enter") {
             e.preventDefault();
             if (open) select(GENDERS[active]);
-            else setOpen(true);
+            else openDropdown();
           }
         }}
         className={`w-full h-11 px-3 rounded-xl bg-base-900/60 border text-left flex items-center justify-between gap-2 focus:outline-none transition-all ${
@@ -119,11 +147,21 @@ const GenderSelect = ({ value, onChange }) => {
         </svg>
       </button>
 
-      {open && (
-        <div
-          role="listbox"
-          className="absolute top-full left-0 mt-2 z-50 w-full min-w-[220px] rounded-2xl glass-card shadow-2xl p-2 dropdown-pop"
-          onKeyDown={(e) => {
+      {open &&
+        createPortal(
+          <div
+            ref={popRef}
+            role="listbox"
+            className="rounded-2xl glass-card shadow-2xl p-2 dropdown-pop"
+            style={{
+              position: "fixed",
+              top: anchor?.top ?? 0,
+              left: anchor?.left ?? 0,
+              width: Math.max(220, anchor?.width ?? 220),
+              maxWidth: "calc(100vw - 16px)",
+              zIndex: 80,
+            }}
+            onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
               e.preventDefault();
               move(1);
@@ -180,8 +218,9 @@ const GenderSelect = ({ value, onChange }) => {
               </button>
             );
           })}
-        </div>
-      )}
+        </div>,
+          document.body
+        )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const MONTHS = [
@@ -29,8 +30,33 @@ const CalendarPicker = ({ label, value, onChange, minDate, maxDate }) => {
   const [step, setStep] = useState("year");
   const [viewYear, setViewYear] = useState(null);
   const [viewMonth, setViewMonth] = useState(null);
+  const [anchor, setAnchor] = useState(null);
   const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+  const popRef = useRef(null);
 
+  const measureAnchor = () => {
+    const r = triggerRef.current?.getBoundingClientRect();
+    if (r) setAnchor({ top: r.bottom + 8, left: r.left });
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target) && !popRef.current?.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", measureAnchor);
+    document.addEventListener("scroll", measureAnchor, true);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", measureAnchor);
+      document.removeEventListener("scroll", measureAnchor, true);
+    };
+  }, [open]);
   const today = new Date();
   const todayISO = toISO(today.getFullYear(), today.getMonth(), today.getDate());
   const selected = /^\d{4}-\d{2}-\d{2}$/.test(value || "")
@@ -51,24 +77,11 @@ const CalendarPicker = ({ label, value, onChange, minDate, maxDate }) => {
     return true;
   };
 
-  useEffect(() => {
-    if (!open) return;
-    const onDocClick = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
-    };
-    const onKey = (e) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("mousedown", onDocClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDocClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
   const openCalendar = () => {
     setViewYear(selected ? selected.year : max.year);
     setViewMonth(selected ? selected.month : max.month);
     setStep(selected ? "day" : "year");
+    measureAnchor();
     setOpen(true);
   };
 
@@ -130,7 +143,7 @@ const CalendarPicker = ({ label, value, onChange, minDate, maxDate }) => {
   const dayGrid = (
     <>
       <div className="grid grid-cols-7 gap-1">
-        {WEEKDAYS.map((wd, i) => (
+        {WEEKDAYS.map((wd) => (
           <div
             key={wd}
             className="text-center text-[10px] font-black uppercase tracking-wider text-base-content/40 py-1"
@@ -191,6 +204,7 @@ const CalendarPicker = ({ label, value, onChange, minDate, maxDate }) => {
       </label>
 
       <button
+        ref={triggerRef}
         type="button"
         onClick={openCalendar}
         className="w-full h-11 px-3 rounded-xl bg-base-900/60 border border-white/10 text-left flex items-center justify-between gap-2 focus:outline-none focus:border-primary transition-all hover:border-white/25"
@@ -217,8 +231,20 @@ const CalendarPicker = ({ label, value, onChange, minDate, maxDate }) => {
         </svg>
       </button>
 
-      {open && (
-        <div className="absolute top-full left-0 mt-2 z-50 w-[320px] max-w-[85vw] rounded-2xl glass-card shadow-2xl p-4 calendar-pop">
+      {open &&
+        createPortal(
+          <div
+            ref={popRef}
+            className="rounded-2xl glass-card shadow-2xl p-4 calendar-pop"
+            style={{
+              position: "fixed",
+              top: anchor?.top ?? 0,
+              left: Math.max(8, Math.min(anchor?.left ?? 0, window.innerWidth - 328)),
+              width: 320,
+              maxWidth: "calc(100vw - 16px)",
+              zIndex: 80,
+            }}
+          >
           {/* Header */}
           <div className="flex items-center gap-1 mb-3">
             {step !== "year" ? (
@@ -338,8 +364,9 @@ const CalendarPicker = ({ label, value, onChange, minDate, maxDate }) => {
 
           {/* Day panel */}
           {step === "day" && dayGrid}
-        </div>
-      )}
+        </div>,
+          document.body
+        )}
     </div>
   );
 };
