@@ -6,7 +6,7 @@ import { BASE_URL } from "../utils/constants";
 import MediaImage from "./MediaImage";
 import {
   addNotifications,
-  markAllRead,
+  clearNotifications,
   removeNotification,
 } from "../utils/notificationSlice";
 
@@ -108,18 +108,28 @@ const NotificationBell = () => {
   const handleClick = async (n) => {
     setOpen(false);
     try {
-      if (!n.isRead) {
-        await axios.patch(
-          `${BASE_URL}notifications/${n._id}/read`,
-          {},
-          { withCredentials: true }
-        );
-      }
+      await axios.patch(
+        `${BASE_URL}notifications/${n._id}/read`,
+        {},
+        { withCredentials: true }
+      );
+      dispatch(removeNotification(n._id));
     } catch (err) {
       console.error("Error marking notification read:", err);
     }
-    dispatch(removeNotification(n._id));
     if (n.link) navigate(n.link);
+  };
+
+  const handleDismiss = async (e, id) => {
+    e.stopPropagation();
+    try {
+      await axios.delete(`${BASE_URL}notifications/${id}`, {
+        withCredentials: true,
+      });
+      dispatch(removeNotification(id));
+    } catch (err) {
+      console.error("Error dismissing notification:", err);
+    }
   };
 
   const handleMarkAllRead = async () => {
@@ -129,7 +139,7 @@ const NotificationBell = () => {
         {},
         { withCredentials: true }
       );
-      dispatch(markAllRead());
+      dispatch(clearNotifications());
     } catch (err) {
       console.error("Error marking all notifications read:", err);
     }
@@ -168,7 +178,7 @@ const NotificationBell = () => {
             <p className="text-xs font-black text-white uppercase tracking-widest">
               Notifications
             </p>
-            {unreadCount > 0 && (
+            {notifications.length > 0 && (
               <button
                 onClick={handleMarkAllRead}
                 className="text-[10px] font-bold text-rose-400 hover:text-rose-300 transition-colors"
@@ -206,12 +216,15 @@ const NotificationBell = () => {
                   ? `${actor.firstName}${actor.lastName ? " " + actor.lastName : ""}`
                   : "Someone";
                 return (
-                  <button
+                  <div
                     key={n._id}
                     onClick={() => handleClick(n)}
-                    className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-white/5 ${
-                      !n.isRead ? "bg-rose-500/5 border-l-2 border-rose-500" : "border-l-2 border-transparent"
-                    }`}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") handleClick(n);
+                    }}
+                    className="w-full flex items-start gap-3 px-4 py-3 text-left cursor-pointer transition-colors hover:bg-white/5 group bg-rose-500/5 border-l-2 border-rose-500"
                   >
                     <div
                       className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${meta.tint}`}
@@ -239,13 +252,7 @@ const NotificationBell = () => {
                             className="w-5 h-5 rounded-full object-cover shrink-0"
                           />
                         )}
-                        <p
-                          className={`text-xs leading-snug truncate ${
-                            n.isRead
-                              ? "text-base-content/70"
-                              : "text-white font-bold"
-                          }`}
-                        >
+                        <p className="text-xs leading-snug truncate text-white font-bold">
                           {n.message}
                         </p>
                       </div>
@@ -253,10 +260,28 @@ const NotificationBell = () => {
                         {timeAgo(n.createdAt)}
                       </p>
                     </div>
-                    {!n.isRead && (
-                      <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 mt-1.5"></span>
-                    )}
-                  </button>
+                    <button
+                      type="button"
+                      aria-label="Dismiss notification"
+                      title="Dismiss"
+                      onClick={(e) => handleDismiss(e, n._id)}
+                      className="shrink-0 w-6 h-6 -mr-1 mt-0.5 rounded-full flex items-center justify-center text-base-content/40 hover:text-white hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 );
               })
             )}

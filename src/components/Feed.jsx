@@ -8,10 +8,46 @@ import FeedBackground from "./FeedBackground";
 import { Link } from "react-router-dom";
 import { createSocketConnection } from "../utils/socket";
 
+const ModeToggle = ({ mode, onChange }) => (
+  <div className="flex items-center gap-1 rounded-full border border-white/10 bg-base-900/70 backdrop-blur-xl p-1 shadow-lg shadow-black/30">
+    <button
+      type="button"
+      onClick={() => onChange("similar")}
+      title="Who is like me — mentor / friend matches"
+      className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider transition-all ${
+        mode === "similar"
+          ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/25"
+          : "text-white/50 hover:text-white hover:bg-white/5"
+      }`}
+    >
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+      Similar
+    </button>
+    <button
+      type="button"
+      onClick={() => onChange("complementary")}
+      title="Who fills your stack's gaps — the co-founder view"
+      className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider transition-all ${
+        mode === "complementary"
+          ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/25"
+          : "text-white/50 hover:text-white hover:bg-white/5"
+      }`}
+    >
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+      </svg>
+      Complementary
+    </button>
+  </div>
+);
+
 const Feed = () => {
   const dispatch = useDispatch();
   const feed = useSelector((store) => store.feed);
   const [loading, setLoading] = useState(true);
+  const [mode, setMode] = useState("similar");
   const [superLikesRemaining, setSuperLikesRemaining] = useState(null);
   const [isViewerPremium, setIsViewerPremium] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
@@ -23,21 +59,31 @@ const Feed = () => {
     setTimeout(() => setToastVisible(false), 3500);
   }, []);
 
-  const getFeed = async () => {
+  const getFeed = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(BASE_URL + "feed", { withCredentials: true });
+      const res = await axios.get(`${BASE_URL}feed?mode=${mode}`, {
+        withCredentials: true,
+      });
       dispatch(addFeed(res.data));
     } catch (err) {
       console.error("Error fetching feed:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [mode, dispatch]);
 
   useEffect(() => {
     getFeed();
-  }, []);
+  }, [getFeed]);
+
+  const handleModeChange = useCallback(
+    (nextMode) => {
+      if (nextMode === mode) return;
+      setMode(nextMode);
+    },
+    [mode]
+  );
 
   // Live refresh: when someone super connects with me, re-pull the feed
   // so their card appears at the top with the "Starred You" badge.
@@ -45,14 +91,11 @@ const Feed = () => {
     const s = createSocketConnection();
     const onNotification = (data) => {
       if (!data || data.type !== "superlike") return;
-      axios
-        .get(BASE_URL + "feed", { withCredentials: true })
-        .then((res) => dispatch(addFeed(res.data)))
-        .catch((err) => console.error("Error refreshing feed:", err));
+      getFeed();
     };
     s.on("notification:new", onNotification);
     return () => s.off("notification:new", onNotification);
-  }, [dispatch]);
+  }, [getFeed]);
 
   const getSuperLikeStatus = useCallback(async () => {
     try {
@@ -185,7 +228,9 @@ const Feed = () => {
     return (
       <div className="relative flex justify-center items-center min-h-[75vh] p-4">
         <FeedBackground />
-        <div className="glass-card max-w-lg text-center p-8 sm:p-10 rounded-3xl border border-white/10 shadow-2xl space-y-6 relative overflow-hidden">
+        <div className="flex flex-col items-center gap-5 w-full">
+          <ModeToggle mode={mode} onChange={handleModeChange} />
+          <div className="glass-card max-w-lg text-center p-8 sm:p-10 rounded-3xl border border-white/10 shadow-2xl space-y-6 relative overflow-hidden">
           <div className="absolute -top-12 -right-12 w-36 h-36 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
           <div className="mx-auto w-20 h-20 bg-gradient-to-tr from-primary to-secondary rounded-3xl p-0.5 shadow-xl shadow-primary/25 flex items-center justify-center">
             <div className="w-full h-full bg-base-950 rounded-[1.4rem] flex items-center justify-center">
@@ -217,6 +262,7 @@ const Feed = () => {
             </Link>
           </div>
         </div>
+        </div>
       </div>
     );
   }
@@ -227,6 +273,14 @@ const Feed = () => {
   return (
     <div className="relative flex flex-col items-center justify-center min-h-[calc(100dvh-10rem)] px-3 sm:px-4 py-3 sm:py-8">
       <FeedBackground />
+      <div className="flex flex-col items-center gap-3 mb-3">
+        <ModeToggle mode={mode} onChange={handleModeChange} />
+        <p className="text-[10px] font-bold uppercase tracking-widest text-base-content/40">
+          {mode === "complementary"
+            ? "Finding devs who fill your stack's gaps"
+            : "Finding devs who match your stack"}
+        </p>
+      </div>
       {/* Keyboard Shortcut Indicator */}
       <div className="hidden sm:flex items-center gap-4 mb-3 text-xs text-base-content/40 font-bold tracking-wider uppercase">
         <span className="flex items-center gap-1">

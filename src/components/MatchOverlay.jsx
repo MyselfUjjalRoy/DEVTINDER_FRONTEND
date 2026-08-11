@@ -1,8 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import axios from "axios";
 import confetti from "canvas-confetti";
 import { MembershipBadge } from "../utils/membershipUtils";
+import { BASE_URL } from "../utils/constants";
 import MediaImage from "./MediaImage";
 
 const FLOAT_HEARTS = [
@@ -175,11 +177,30 @@ const MatchOverlay = ({ matchData, onClose }) => {
   const sceneRef = useRef(null);
   const glareRef = useRef(null);
 
+  const [icebreaker, setIcebreaker] = useState(null);
+
   useEffect(() => {
     if (matchData) {
       fireConfetti();
     }
   }, [matchData]);
+
+  useEffect(() => {
+    const users = Array.isArray(matchData?.users) ? matchData.users : [];
+    const otherUser =
+      users.find((u) => u && u._id !== me?._id) || users[0] || {};
+    if (!otherUser._id) return;
+    let cancelled = false;
+    axios
+      .get(`${BASE_URL}icebreaker/${otherUser._id}`, { withCredentials: true })
+      .then((res) => {
+        if (!cancelled && res.data?.data) setIcebreaker(res.data.data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [matchData, me?._id]);
 
   useEffect(() => {
     if (!matchData) return;
@@ -295,6 +316,23 @@ const MatchOverlay = ({ matchData, onClose }) => {
               hi and start building together.
             </p>
           </div>
+
+          {icebreaker && (
+            <div
+              className="mx-auto max-w-md rounded-2xl border border-white/10 bg-white/[0.05] backdrop-blur-xl px-4 py-3 text-left fade-in"
+              style={{ animationDelay: "1s" }}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <svg className="w-3.5 h-3.5 text-rose-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2l1.9 5.1L19 9l-5.1 1.9L12 16l-1.9-5.1L5 9l5.1-1.9L12 2zm6 12l.95 2.55L21.5 17l-2.55.95L18 20.5l-.95-2.55L14.5 17l2.55-.95L18 14zM5 15l.7 1.8L7.5 17.5l-1.8.7L5 20l-.7-1.8L2.5 17.5l1.8-.7L5 15z" />
+                </svg>
+                <span className="text-[9px] font-black uppercase tracking-[0.18em] text-rose-400">
+                  Icebreaker
+                </span>
+              </div>
+              <p className="text-xs text-slate-200 leading-relaxed">{icebreaker.text}</p>
+            </div>
+          )}
 
           <div className="relative flex items-center justify-center gap-3 sm:gap-6 pt-2">
             <MatchProfileCard

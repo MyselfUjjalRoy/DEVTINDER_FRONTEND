@@ -212,6 +212,9 @@ const Chat = () => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [showJump, setShowJump] = useState(false);
 
+  const [icebreaker, setIcebreaker] = useState(null);
+  const [icebreakerLoading, setIcebreakerLoading] = useState(false);
+
   const user = useSelector((store) => store.user);
   const firstName = user?.firstName;
   const userId = user?._id;
@@ -318,6 +321,27 @@ const Chat = () => {
     setSearchQuery("");
     setSearchResults([]);
     fetchChatMessages(1);
+  }, [targetUserId]);
+
+  useEffect(() => {
+    if (!targetUserId) return;
+    let cancelled = false;
+    setIcebreaker(null);
+    setIcebreakerLoading(true);
+    axios
+      .get(`${BASE_URL}icebreaker/${targetUserId}`, { withCredentials: true })
+      .then((res) => {
+        if (!cancelled && res.data?.data) setIcebreaker(res.data.data);
+      })
+      .catch((err) => {
+        console.error("Icebreaker fetch error:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setIcebreakerLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [targetUserId]);
 
   const handleScroll = () => {
@@ -977,6 +1001,37 @@ const Chat = () => {
                     Start the conversation! Share what tech project you're working on.
                   </p>
                 </div>
+                {icebreakerLoading ? (
+                  <span className="loading loading-spinner loading-sm text-primary" />
+                ) : icebreaker ? (
+                  <div className="w-full max-w-sm pop-in">
+                    <div className="relative rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/[0.12] to-secondary/[0.08] p-4 text-left">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <svg className="w-3.5 h-3.5 text-primary" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2l1.9 5.1L19 9l-5.1 1.9L12 16l-1.9-5.1L5 9l5.1-1.9L12 2zm6 12l.95 2.55L21.5 17l-2.55.95L18 20.5l-.95-2.55L14.5 17l2.55-.95L18 14zM5 15l.7 1.8L7.5 17.5l-1.8.7L5 20l-.7-1.8L2.5 17.5l1.8-.7L5 15z" />
+                        </svg>
+                        <span className="text-[9px] font-black uppercase tracking-[0.18em] text-primary">
+                          AI Icebreaker
+                        </span>
+                      </div>
+                      <p className="text-xs text-white/85 leading-relaxed">{icebreaker.text}</p>
+                      <div className="flex items-center gap-2 mt-3">
+                        <button
+                          onClick={() => sendMessage(icebreaker.text)}
+                          className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white rounded-xl px-3 text-xs font-bold h-9 hover:scale-105 active:scale-95 shadow-lg shadow-primary/25 transition-all"
+                        >
+                          Send it
+                        </button>
+                        <button
+                          onClick={() => setIcebreaker(null)}
+                          className="btn border-white/10 bg-white/5 hover:bg-white/10 border text-white/70 rounded-xl px-3 text-xs font-bold h-9 hover:scale-105 active:scale-95 transition-all"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
                 <div className="flex flex-wrap gap-2 justify-center pt-2 max-w-sm">
                   <button
                     onClick={() => sendMessage("Hey! Want to pair program on a project? 🚀")}

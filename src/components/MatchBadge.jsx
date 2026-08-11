@@ -36,13 +36,13 @@ const bandForScore = (score) =>
 const labelForScore = (score) =>
   score >= 70 ? "High match" : score >= 40 ? "Moderate match" : "Low match";
 
-const POPOVER_WIDTH = 192; // w-48
-const POPOVER_HEIGHT = 160; // rough max height, used to flip above the badge
+const POPOVER_WIDTH = 256; // w-64
+const POPOVER_HEIGHT = 230; // rough max height, used to flip above the badge
 const EDGE_PAD = 8;
 
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
-const MatchBadge = ({ score, breakdown }) => {
+const MatchBadge = ({ score, breakdown, reasons = [] }) => {
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState(null);
   const btnRef = useRef(null);
@@ -170,7 +170,7 @@ const MatchBadge = ({ score, breakdown }) => {
       {open && anchor && (
         <div
           ref={popRef}
-          className="fixed z-[60] w-48 -translate-x-1/2 rounded-2xl bg-[#171228]/95 backdrop-blur-xl border border-white/10 p-3 shadow-2xl"
+          className="fixed z-[60] w-64 -translate-x-1/2 rounded-2xl bg-[#171228]/95 backdrop-blur-xl border border-white/10 p-3 shadow-2xl"
           style={{ top: anchor.top, left: anchor.left }}
           onMouseEnter={openPop}
           onMouseLeave={scheduleClose}
@@ -194,10 +194,27 @@ const MatchBadge = ({ score, breakdown }) => {
           ) : (
             <p className="mt-1 text-[10px] text-white/50">Not enough profile data yet.</p>
           )}
+          {reasons.length > 0 && (
+            <>
+              <div className="my-2 h-px bg-white/10" />
+              <ul className="space-y-1">
+                {reasons.slice(0, 4).map((reason, idx) => (
+                  <li key={idx} className="flex items-start gap-1.5 text-[10px] font-semibold text-white/70 leading-snug">
+                    <svg className="w-3 h-3 mt-px flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5" style={{ color }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <p className="mt-2 text-[9px] text-white/35 leading-snug">
             {signals.some((s) => !s.hasData)
               ? "* based on available profile data"
-              : "Skills & location similarity"}
+              : signals.some((s) => s.key === "coverage")
+                ? "New skills, overlap & location"
+                : "Skills & location similarity"}
           </p>
         </div>
       )}

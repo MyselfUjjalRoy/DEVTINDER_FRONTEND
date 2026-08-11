@@ -35,6 +35,7 @@ const Requests = () => {
   const navigate = useNavigate();
   const requests = useSelector((store) => store.requests);
   const [leaving, setLeaving] = useState({});
+  const [fetchError, setFetchError] = useState(false);
 
   const handleDecision = async (status, _id) => {
     if (leaving[_id]) return;
@@ -64,12 +65,38 @@ const Requests = () => {
       dispatch(addRequests(res?.data?.data));
     } catch (err) {
       console.error("Error fetching requests:", err);
+      setFetchError(true);
     }
   };
 
   useEffect(() => {
     fetchRequests();
   }, []);
+
+  if (fetchError) {
+    return (
+      <div className="relative flex justify-center items-center min-h-[75vh] p-4 overflow-hidden">
+        <div className="aurora-blob w-72 h-72 bg-rose-500/20 -top-10 -right-16" />
+        <div className="glass-card max-w-md w-full text-center p-10 rounded-[2rem] border border-white/10 shadow-2xl space-y-5 relative overflow-hidden fade-up">
+          <div className="relative">
+            <h1 className="text-2xl font-black text-white">Couldn't load your requests</h1>
+            <p className="text-xs text-base-content/65 leading-relaxed mt-1.5">
+              Something went wrong while fetching your incoming requests. Check your connection and try again.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setFetchError(false);
+              fetchRequests();
+            }}
+            className="relative btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white rounded-2xl h-11 px-7 font-bold text-xs shadow-lg shadow-primary/30 hover:scale-105 hover:shadow-primary/50 transition-all"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!requests) {
     return (
@@ -139,6 +166,8 @@ const Requests = () => {
       {/* Horizontal inbox list */}
       <div className="relative mx-auto max-w-3xl space-y-3">
         {requests.map((request, idx) => {
+          const fromUser = request.fromUserId;
+          if (!fromUser) return null;
           const {
             _id,
             firstName,
@@ -147,7 +176,7 @@ const Requests = () => {
             age,
             gender,
             skills,
-          } = request.fromUserId;
+          } = fromUser;
           const skillList = Array.isArray(skills) ? skills : [];
           const glyph = GENDER_GLYPH[gender];
           const state = leaving[_id];

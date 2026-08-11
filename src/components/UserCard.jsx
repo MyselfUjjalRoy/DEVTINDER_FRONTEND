@@ -334,7 +334,7 @@ const UserCard = ({
         )}
         <div className="absolute top-4 left-4 right-4 flex items-start justify-between pointer-events-none">
           <div className="flex items-center gap-1.5">
-            <MatchBadge score={user.score} breakdown={user.breakdown} />
+            <MatchBadge score={user.score} breakdown={user.breakdown} reasons={user.reasons} />
             {user.starredYou && (
               <span
                 title="This developer super connected with your profile"
