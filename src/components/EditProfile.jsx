@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -46,6 +46,48 @@ const SectionHeader = ({ icon, title, subtitle }) => (
   </div>
 );
 
+const AutoSaveIndicator = ({ status }) => {
+  const config = {
+    idle: null,
+    dirty: {
+      dot: "bg-amber-400",
+      text: "Unsaved changes",
+      cls: "border-amber-400/30 bg-amber-400/10 text-amber-200",
+    },
+    saving: {
+      dot: "bg-cyan-400 animate-pulse",
+      text: "Saving...",
+      cls: "border-cyan-400/30 bg-cyan-400/10 text-cyan-200",
+    },
+    saved: {
+      dot: "bg-emerald-400",
+      text: "All changes saved",
+      cls: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
+    },
+    error: {
+      dot: "bg-rose-400",
+      text: "Auto-save failed",
+      cls: "border-rose-400/30 bg-rose-400/10 text-rose-200",
+    },
+    paused: {
+      dot: "bg-amber-400 animate-pulse",
+      text: "Fixing fields to save...",
+      cls: "border-amber-400/30 bg-amber-400/10 text-amber-200",
+    },
+  }[status];
+
+  if (!config) return null;
+
+  return (
+    <div
+      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-wider shrink-0 ${config.cls}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
+      {config.text}
+    </div>
+  );
+};
+
 const TextInput = ({ label, value, onChange, placeholder, type = "text", hint, validate, ...rest }) => {
   const [error, setError] = useState("");
 
@@ -91,12 +133,14 @@ const TextInput = ({ label, value, onChange, placeholder, type = "text", hint, v
   );
 };
 
-const TagInput = ({ label, value, onChange, max, placeholder, hint }) => {
+const TAG_CHAR_LIMIT = 30;
+
+const TagInput = ({ label, value, onChange, max, placeholder, hint, maxChars = TAG_CHAR_LIMIT }) => {
   const [draft, setDraft] = useState("");
   const full = value.length >= max;
 
   const addTag = (raw) => {
-    const tag = String(raw || "").trim().replace(/,$/, "");
+    const tag = String(raw || "").trim().replace(/,$/, "").slice(0, maxChars);
     if (!tag) return;
     if (value.some((t) => t.toLowerCase() === tag.toLowerCase())) {
       setDraft("");
@@ -127,6 +171,7 @@ const TagInput = ({ label, value, onChange, max, placeholder, hint }) => {
           className="flex-1 min-w-0 bg-transparent text-base sm:text-xs text-white placeholder:text-base-content/30 focus:outline-none h-11"
           value={draft}
           disabled={full}
+          maxLength={maxChars}
           placeholder={full ? `Max ${max} added` : placeholder}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -215,7 +260,6 @@ const EditProfile = ({ user }) => {
   const [toast, setToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -224,6 +268,136 @@ const EditProfile = ({ user }) => {
   const photoInputRef = useRef(null);
   const photoTargetRef = useRef(-1);
   const dispatch = useDispatch();
+
+  // ── Auto-save ────────────────────────────────────────────────────────
+  const buildPayload = () => ({
+    firstName,
+    lastName,
+    photoURL,
+    dob,
+    gender,
+    about,
+    skills,
+    location: { city, country },
+    hobbies,
+    likes,
+    dislikes,
+    photos: photos.filter(Boolean),
+    isStudent,
+    education: {
+      college,
+      degree,
+      passingYear: passingYear ? Number(passingYear) : undefined,
+      cgpa: cgpa ? Number(cgpa) : undefined,
+    },
+    work: {
+      company,
+      role,
+      experienceYears: experienceYears ? Number(experienceYears) : undefined,
+    },
+    codingProfiles: {
+      leetcode,
+      gfg,
+      codeforces,
+      codechef,
+      hackerrank,
+      codingninjas,
+    },
+    github,
+    linkedin,
+    portfolio,
+    resumeURL,
+  });
+
+  const [autoSaveStatus, setAutoSaveStatus] = useState("idle"); // idle | dirty | saving | saved | error | paused
+  const initialSnapshotRef = useRef(null);
+  const payloadRef = useRef(null);
+  const dirtyRef = useRef(false);
+  const autoSaveTimer = useRef(null);
+  const autoSaveSeq = useRef(0);
+
+  const validateFields = () => {
+    if (dob && !calculateAge(dob)) return "Please select a valid date of birth.";
+    if (passingYear && (Number(passingYear) < 1950 || Number(passingYear) > maxPassingYear)) {
+      return `Passing year must be between 1950 and ${maxPassingYear}.`;
+    }
+    if (cgpa && (Number(cgpa) < 0 || Number(cgpa) > 10)) {
+      return "CGPA must be between 0 and 10.";
+    }
+    if (experienceYears && (Number(experienceYears) < 0 || Number(experienceYears) > 60)) {
+      return "Years of experience must be between 0 and 60.";
+    }
+    return "";
+  };
+
+  const runAutoSave = async () => {
+    setError("");
+    const validationError = validateFields();
+    if (validationError) {
+      // Invalid mid-typing values (e.g. partial year) pause auto-save;
+      // it resumes automatically once the field is valid again.
+      setAutoSaveStatus("paused");
+      return;
+    }
+    const seq = ++autoSaveSeq.current;
+    setAutoSaveStatus("saving");
+    try {
+      const res = await axios.patch(BASE_URL + "profile/edit", payloadRef.current, {
+        withCredentials: true,
+      });
+      if (seq !== autoSaveSeq.current) return;
+      dispatch(addUser(res?.data?.data));
+      initialSnapshotRef.current = JSON.stringify(payloadRef.current);
+      dirtyRef.current = false;
+      setAutoSaveStatus("saved");
+    } catch (err) {
+      if (seq !== autoSaveSeq.current) return;
+      console.error(err);
+      dirtyRef.current = true;
+      setAutoSaveStatus("error");
+    }
+  };
+
+  // Debounced auto-save on any field change (skips the initial mount render).
+  useEffect(() => {
+    const current = buildPayload();
+    payloadRef.current = current;
+    if (initialSnapshotRef.current === null) {
+      initialSnapshotRef.current = JSON.stringify(current);
+      return;
+    }
+    const changed = JSON.stringify(current) !== initialSnapshotRef.current;
+    if (!changed) {
+      dirtyRef.current = false;
+      setAutoSaveStatus("idle");
+      return;
+    }
+    dirtyRef.current = true;
+    setAutoSaveStatus("dirty");
+    clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(runAutoSave, 1500);
+    return () => clearTimeout(autoSaveTimer.current);
+  }, [firstName, lastName, dob, gender, about, photoURL, skills, city, country, hobbies, likes, dislikes, photos, isStudent, college, degree, passingYear, cgpa, company, role, experienceYears, github, linkedin, portfolio, leetcode, gfg, codeforces, codechef, hackerrank, codingninjas, resumeURL]);
+
+  // Fade the "Saved" pill back to idle after a moment.
+  useEffect(() => {
+    if (autoSaveStatus === "saved") {
+      const t = setTimeout(() => setAutoSaveStatus("idle"), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [autoSaveStatus]);
+
+  // Flush any pending changes if the user leaves before the debounce fires.
+  useEffect(() => {
+    return () => {
+      clearTimeout(autoSaveTimer.current);
+      if (dirtyRef.current && payloadRef.current) {
+        axios
+          .patch(BASE_URL + "profile/edit", payloadRef.current, { withCredentials: true })
+          .catch(() => {});
+      }
+    };
+  }, []);
 
   const now = new Date();
   const dobBounds = {
@@ -273,7 +447,7 @@ const EditProfile = ({ user }) => {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setPhotoURL(res.data.url);
-      setToastMessage("Photo Uploaded! Save to apply.");
+      setToastMessage("Photo Uploaded! Auto-saving...");
       setToast(true);
       setTimeout(() => setToast(false), 3000);
     } catch (err) {
@@ -298,7 +472,7 @@ const EditProfile = ({ user }) => {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setResumeURL(res.data.url);
-      setToastMessage("Resume Uploaded! Save to apply.");
+      setToastMessage("Resume Uploaded! Auto-saving...");
       setToast(true);
       setTimeout(() => setToast(false), 3000);
     } catch (err) {
@@ -333,7 +507,7 @@ const EditProfile = ({ user }) => {
         }
         return next;
       });
-      setToastMessage("Photo Added! Save to apply.");
+      setToastMessage("Photo Added! Auto-saving...");
       setToast(true);
       setTimeout(() => setToast(false), 3000);
     } catch (err) {
@@ -347,83 +521,6 @@ const EditProfile = ({ user }) => {
 
   const removePhoto = (index) => {
     setPhotos((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const saveProfile = async () => {
-    setError("");
-
-    if (dob && !calculateAge(dob)) {
-      setError("Please select a valid date of birth.");
-      return;
-    }
-    if (passingYear && (Number(passingYear) < 1950 || Number(passingYear) > maxPassingYear)) {
-      setError(`Passing year must be between 1950 and ${maxPassingYear}.`);
-      return;
-    }
-    if (cgpa && (Number(cgpa) < 0 || Number(cgpa) > 10)) {
-      setError("CGPA must be between 0 and 10.");
-      return;
-    }
-    if (experienceYears && (Number(experienceYears) < 0 || Number(experienceYears) > 60)) {
-      setError("Years of experience must be between 0 and 60.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await axios.patch(
-        BASE_URL + "profile/edit",
-        {
-          firstName,
-          lastName,
-          photoURL,
-          dob,
-          gender,
-          about,
-          skills,
-          location: { city, country },
-          hobbies,
-          likes,
-          dislikes,
-          photos: photos.filter(Boolean),
-          isStudent,
-          education: {
-            college,
-            degree,
-            passingYear: passingYear ? Number(passingYear) : undefined,
-            cgpa: cgpa ? Number(cgpa) : undefined,
-          },
-          work: {
-            company,
-            role,
-            experienceYears: experienceYears ? Number(experienceYears) : undefined,
-          },
-          codingProfiles: {
-            leetcode,
-            gfg,
-            codeforces,
-            codechef,
-            hackerrank,
-            codingninjas,
-          },
-          github,
-          linkedin,
-          portfolio,
-          resumeURL,
-        },
-        { withCredentials: true }
-      );
-
-      dispatch(addUser(res?.data?.data));
-      setToastMessage("Developer Profile Updated Successfully!");
-      setToast(true);
-      setTimeout(() => setToast(false), 3000);
-    } catch (err) {
-      console.error(err);
-      setError(err?.response?.data || "Failed to update profile details.");
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleCancelMembership = async () => {
@@ -474,16 +571,21 @@ const EditProfile = ({ user }) => {
 
           <div className="glass-card shadow-2xl rounded-3xl border border-white/10 p-6 sm:p-8 backdrop-blur-2xl">
             <div className="border-b border-white/10 pb-5 mb-6">
-              <h2 className="text-3xl font-black text-white tracking-tight">Edit Developer Profile</h2>
-              <p className="text-xs text-base-content/60 mt-1">
-                Customize your bio, photo, and tech stack to get matched with right developers.
-              </p>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <h2 className="text-3xl font-black text-white tracking-tight">Edit Developer Profile</h2>
+                  <p className="text-xs text-base-content/60 mt-1">
+                    Customize your bio, photo, and tech stack to get matched with right developers.
+                  </p>
+                </div>
+                <AutoSaveIndicator status={autoSaveStatus} />
+              </div>
             </div>
 
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <TextInput label="First Name" value={firstName} onChange={setFirstName} placeholder="First Name" />
-                <TextInput label="Last Name" value={lastName} onChange={setLastName} placeholder="Last Name" />
+                <TextInput label="First Name" value={firstName} onChange={setFirstName} placeholder="First Name" maxLength={50} />
+                <TextInput label="Last Name" value={lastName} onChange={setLastName} placeholder="Last Name" maxLength={50} />
               </div>
 
               <div className="form-control">
@@ -568,9 +670,13 @@ const EditProfile = ({ user }) => {
                 <textarea
                   className="textarea textarea-bordered bg-base-900/60 border-white/10 text-white focus:outline-none focus:border-primary text-base sm:text-xs rounded-xl min-h-[6rem] leading-relaxed resize-none"
                   value={about}
+                  maxLength={300}
                   onChange={(e) => setAbout(e.target.value)}
                   placeholder="Tell potential matches what tech projects you are building and what skills you are looking to pair on..."
                 />
+                <div className="label py-0.5 -mt-1">
+                  <span className="label-text text-[10px] text-base-content/40">{about.length}/300</span>
+                </div>
               </div>
             </div>
           </div>
@@ -589,8 +695,8 @@ const EditProfile = ({ user }) => {
             />
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <TextInput label="City" value={city} onChange={setCity} placeholder="e.g. Kolkata" />
-                <TextInput label="Country" value={country} onChange={setCountry} placeholder="e.g. India" />
+                <TextInput label="City" value={city} onChange={setCity} placeholder="e.g. Kolkata" maxLength={60} />
+                <TextInput label="Country" value={country} onChange={setCountry} placeholder="e.g. India" maxLength={60} />
               </div>
               <TagInput
                 label="Hobbies"
@@ -739,9 +845,9 @@ const EditProfile = ({ user }) => {
 
             {isStudent ? (
               <div className="space-y-4">
-                <TextInput label="College / University" value={college} onChange={setCollege} placeholder="e.g. Jadavpur University" />
+                <TextInput label="College / University" value={college} onChange={setCollege} placeholder="e.g. Jadavpur University" maxLength={100} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <TextInput label="Degree / Course" value={degree} onChange={setDegree} placeholder="e.g. B.Tech CSE" />
+                  <TextInput label="Degree / Course" value={degree} onChange={setDegree} placeholder="e.g. B.Tech CSE" maxLength={100} />
                   <TextInput label="Passing Year" value={passingYear} onChange={setPassingYear} placeholder="e.g. 2027" type="number" min={1950} max={maxPassingYear} hint={`Between 1950 and ${maxPassingYear}`} validate={validatePassingYear} />
                 </div>
                 <TextInput label="CGPA" value={cgpa} onChange={setCgpa} placeholder="e.g. 8.5" type="number" step="0.01" min={0} max={10} hint="Between 0 and 10" validate={validateCgpa} />
@@ -749,8 +855,8 @@ const EditProfile = ({ user }) => {
             ) : (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <TextInput label="Company" value={company} onChange={setCompany} placeholder="e.g. Google, Microsoft, Startup" />
-                  <TextInput label="Role / Designation" value={role} onChange={setRole} placeholder="e.g. SDE Intern, Full-Stack Dev" />
+                  <TextInput label="Company" value={company} onChange={setCompany} placeholder="e.g. Google, Microsoft, Startup" maxLength={100} />
+                  <TextInput label="Role / Designation" value={role} onChange={setRole} placeholder="e.g. SDE Intern, Full-Stack Dev" maxLength={100} />
                 </div>
                 <TextInput
                   label="Years of Experience"
@@ -780,15 +886,15 @@ const EditProfile = ({ user }) => {
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <TextInput label="GitHub" value={github} onChange={setGithub} placeholder="github.com/username or username" hint="Required for recruiters" />
-              <TextInput label="LinkedIn" value={linkedin} onChange={setLinkedin} placeholder="linkedin.com/in/username or username" />
-              <TextInput label="Portfolio Website" value={portfolio} onChange={setPortfolio} placeholder="yourportfolio.dev" />
-              <TextInput label="LeetCode" value={leetcode} onChange={setLeetcode} placeholder="leetcode.com/u/username or username" />
-              <TextInput label="GeeksforGeeks" value={gfg} onChange={setGfg} placeholder="auth.geeksforgeeks.org/user/username or username" />
-              <TextInput label="Codeforces" value={codeforces} onChange={setCodeforces} placeholder="codeforces.com/profile/username or username" />
-              <TextInput label="CodeChef" value={codechef} onChange={setCodechef} placeholder="codechef.com/users/username or username" />
-              <TextInput label="HackerRank" value={hackerrank} onChange={setHackerrank} placeholder="hackerrank.com/username or username" />
-              <TextInput label="Coding Ninjas" value={codingninjas} onChange={setCodingninjas} placeholder="codingninjas.com/studio/profile/username or username" />
+              <TextInput label="GitHub" value={github} onChange={setGithub} placeholder="github.com/username or username" hint="Required for recruiters" maxLength={500} />
+              <TextInput label="LinkedIn" value={linkedin} onChange={setLinkedin} placeholder="linkedin.com/in/username or username" maxLength={500} />
+              <TextInput label="Portfolio Website" value={portfolio} onChange={setPortfolio} placeholder="yourportfolio.dev" maxLength={500} />
+              <TextInput label="LeetCode" value={leetcode} onChange={setLeetcode} placeholder="leetcode.com/u/username or username" maxLength={200} />
+              <TextInput label="GeeksforGeeks" value={gfg} onChange={setGfg} placeholder="auth.geeksforgeeks.org/user/username or username" maxLength={200} />
+              <TextInput label="Codeforces" value={codeforces} onChange={setCodeforces} placeholder="codeforces.com/profile/username or username" maxLength={200} />
+              <TextInput label="CodeChef" value={codechef} onChange={setCodechef} placeholder="codechef.com/users/username or username" maxLength={200} />
+              <TextInput label="HackerRank" value={hackerrank} onChange={setHackerrank} placeholder="hackerrank.com/username or username" maxLength={200} />
+              <TextInput label="Coding Ninjas" value={codingninjas} onChange={setCodingninjas} placeholder="codingninjas.com/studio/profile/username or username" maxLength={200} />
             </div>
 
             <div className="form-control">
@@ -856,17 +962,15 @@ const EditProfile = ({ user }) => {
           )}
 
           <div className="glass-card shadow-2xl rounded-3xl border border-white/10 p-6 sm:p-8 backdrop-blur-2xl flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <h3 className="font-black text-white">Ready to save?</h3>
-              <p className="text-xs text-base-content/50 mt-0.5">Email, password & membership can only be changed via dedicated flows.</p>
+            <div className="flex items-center gap-3">
+              <AutoSaveIndicator status={autoSaveStatus} />
+              <div>
+                <h3 className="font-black text-white text-sm">All changes are saved automatically</h3>
+                <p className="text-xs text-base-content/50 mt-0.5">
+                  Email, password & membership can only be changed via dedicated flows.
+                </p>
+              </div>
             </div>
-            <button
-              className="btn btn-primary bg-gradient-to-r from-primary to-secondary border-none text-white w-full sm:w-auto px-8 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/20 sm:hover:scale-105 active:scale-95 transition-all h-12"
-              onClick={saveProfile}
-              disabled={loading}
-            >
-              {loading ? <span className="loading loading-spinner loading-xs"></span> : "Save Profile & Tech Stack"}
-            </button>
           </div>
 
           {/* Membership Management Card */}
